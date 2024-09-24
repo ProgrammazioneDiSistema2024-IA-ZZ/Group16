@@ -4,9 +4,3 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-
-
-[workspace]
-members = [
-    "C:/Users/Francesca/Desktop/POLI/PROGRAMMAZIONE DI SISTEMA/PROGETTO/Group16"
-]
