@@ -1,5 +1,5 @@
-use std::{process, thread};
-use std::process::Command;
+use std::{fs, process, thread};
+use std::io::Read;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use sysinfo::Pid;
@@ -8,7 +8,7 @@ mod cpu_evaluation;
 mod mouse_tracker;
 mod audio;
 mod display_window;
-
+mod backup;
 
 #[cfg(target_os = "windows")]
 fn get_screen_resolution() -> (i32, i32){
@@ -43,12 +43,27 @@ fn get_screen_resolution() -> (u32, u32){
     }
 }
 
+#[derive(Debug, serde::Deserialize)]
+struct Config {
+    source_path: String,
+    destination_path: String,
+    backup_type: String,
+    extensions_to_backup: Vec<String>,
+}
+
+fn read_config(config_path: &str) -> Config {
+    let mut file = fs::File::open(config_path).unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).unwrap();
+    toml::from_str(&contents).unwrap()
+}
+
 fn main() {
-
-    //Command::new("backup")
-
+    /* Get the monitor resolution */
     let (width, height) = get_screen_resolution();
     println!("Risoluzione dello schermo: {}, {}", width, height);
+
+    /* Mouse Tracker enable */
 
     let window_enable = Arc::new(Mutex::new(false));
     let window_enable_clone = Arc::clone(&window_enable);

@@ -3,6 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 use crate::audio::play_sound;
+use crate::{backup, read_config};
 
 #[derive(Debug, Clone)]
 struct Point{
@@ -118,7 +119,23 @@ pub fn track_mouse(window_enable: Arc<Mutex<bool>>, screen_width: f64, screen_he
                 // Se il tracciamento è abilitato, verifica se viene disegnato un "+", e non solo gli angoli
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) {
 
+                    let config = read_config("config.toml");
+
                     // faccio il backup
+                    match backup::backup_files(&config) {
+                        Ok(_) => println!("Backup completed successfully"),
+                        Err(e) => match e {
+                            backup::BackupError::SourceNotFound =>
+                                eprintln!("Backup failed: Source path does not exist"),
+                            backup::BackupError::InvalidBackupType =>
+                                eprintln!("Backup failed: Invalid backup type specified"),
+                            backup::BackupError::IoError(e) =>
+                                eprintln!("Backup failed due to IO error: {}", e),
+                            backup::BackupError::FsExtraError(e) =>
+                                eprintln!("Backup failed due to fs_extra error: {}", e),
+                        }
+                    }
+
                     play_sound(1);
                     // enable show window
                     *window_enable.lock().unwrap() = true;
