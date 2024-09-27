@@ -3,7 +3,6 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 use crate::audio::play_sound;
-use crate::display_window::show_gui;
 
 #[derive(Debug, Clone)]
 struct Point{

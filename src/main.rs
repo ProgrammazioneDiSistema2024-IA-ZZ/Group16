@@ -1,12 +1,14 @@
-mod cpu_evaluation;
-use std::process;
-use sysinfo::Pid;
-use std::{thread, time};
-
+use std::{process, thread};
+use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use sysinfo::{System, SystemExt};
-use crate::display_window::show_gui;
+use sysinfo::Pid;
+
+mod cpu_evaluation;
+mod mouse_tracker;
+mod audio;
+mod display_window;
+
 
 #[cfg(target_os = "windows")]
 fn get_screen_resolution() -> (i32, i32){
@@ -41,49 +43,30 @@ fn get_screen_resolution() -> (u32, u32){
     }
 }
 
-fn print_system_info(){
-    let mut system = System::new_all();
-    system.refresh_all();
-
-    println!("Nome del sistema operativo: {:?}", system.name());
-    println!("RAM totale: {} MB", system.total_memory());
-    println!("Numero di cpu: {}", system.cpus().len());
-}
-
-mod mouse_tracker;
-mod audio;
-mod display_window;
-
 fn main() {
 
-    /**/
-
-    /* let mut cpu_log_file = cpu_evaluation::create_file();
-    let pid = Pid::from_u32(process::id());
-
-    loop {
-        cpu_evaluation::process_cpu_consumption(pid, &mut cpu_log_file);
-
-        //Sleep for 2 minutes
-        thread::sleep(time::Duration::from_secs(120));
-    }*/
+    //Command::new("backup")
 
     let (width, height) = get_screen_resolution();
     println!("Risoluzione dello schermo: {}, {}", width, height);
-    print_system_info();
 
     let window_enable = Arc::new(Mutex::new(false));
     let window_enable_clone = Arc::clone(&window_enable);
 
     mouse_tracker::track_mouse(window_enable_clone.clone(), width as f64, height as f64);
 
-    loop {
 
+    let pid = Pid::from_u32(process::id());
+    println!("Pid: {}", pid);
+
+    cpu_evaluation::cpu_monitor(pid);
+
+    loop {
         thread::sleep(Duration::from_secs(1));
         let mut enable = window_enable_clone.lock().unwrap();
         if *enable{
             *enable = false;
-            if let Err(e) = show_gui(){
+            if let Err(e) = display_window::show_gui(){
                 eprintln!("Errore nella generazione della GUI: {}", e );
             }
         }
