@@ -11,13 +11,14 @@ mod display_window;
 mod backup;
 
 #[cfg(target_os = "windows")]
-fn get_screen_resolution() -> (i32, i32){
+fn get_screen_resolution() -> (usize, usize){
+
     use windows::Win32::UI::WindowsAndMessaging::GetSystemMetrics;
     use windows::Win32::UI::WindowsAndMessaging::{SM_CXSCREEN, SM_CYSCREEN};
 
     let width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
     let height = unsafe { GetSystemMetrics(SM_CYSCREEN)};
-    (width, height)
+    (width as usize, height as usize)
 }
 
 #[cfg(target_os = "macos")]
