@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 
 use crate::audio::play_sound;
-use crate::{backup, read_config};
+use crate::{backup};
 
 #[derive(Debug, Clone)]
 struct Point{
@@ -119,7 +119,7 @@ pub fn track_mouse(window_enable: Arc<Mutex<bool>>, screen_width: f64, screen_he
                 // Se il tracciamento è abilitato, verifica se viene disegnato un "+", e non solo gli angoli
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) {
 
-                    let config = read_config("config.toml");
+                    let config = backup::read_config("config.toml");
 
                     // faccio il backup
                     match backup::backup_files(&config) {
@@ -138,8 +138,11 @@ pub fn track_mouse(window_enable: Arc<Mutex<bool>>, screen_width: f64, screen_he
 
                     play_sound(1);
                     // enable show window
-                    *window_enable.lock().unwrap() = true;
+                    let mut win_en = window_enable.lock().unwrap();
+                    *win_en = true;
                     points.clear();
+                    let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
+                    *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
                     //std::process::exit(0);  // Esci dal programma quando viene trovato un "+"
                 }
             }

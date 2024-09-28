@@ -29,12 +29,10 @@ pub fn process_cpu_consumption(pid: Pid, cpu_log_file: &mut std::fs::File) {
 
 pub fn cpu_monitor(pid: Pid) {
     let mut cpu_log_file = create_file();
-    let monitor = thread::spawn(move || {
+    thread::spawn(move || {
         loop {
-            thread::sleep(Duration::from_secs(10));
+            thread::sleep(Duration::from_secs(120));
             process_cpu_consumption(pid, &mut cpu_log_file);
         }
     });
-
-    monitor.join().expect("AIUTO");
 }

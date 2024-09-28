@@ -1,10 +1,25 @@
 use std::{fs, io};
+use std::io::Read;
 use std::path::Path;
 use fs_extra::dir::CopyOptions;
 use fs_extra::dir;
 use fs_extra::file;
 use fs_extra::error::Error as FsExtraError;
-use crate::Config;
+
+#[derive(Debug, serde::Deserialize)]
+pub struct Config {
+    pub source_path: String,
+    pub destination_path: String,
+    pub backup_type: String,
+    pub extensions_to_backup: Vec<String>,
+}
+
+pub fn read_config(config_path: &str) -> Config {
+    let mut file = fs::File::open(config_path).unwrap();
+    let mut contents = String::new();
+    file.read_to_string(&mut contents).unwrap();
+    toml::from_str(&contents).unwrap()
+}
 
 #[derive(Debug)]
 pub(crate) enum BackupError {
