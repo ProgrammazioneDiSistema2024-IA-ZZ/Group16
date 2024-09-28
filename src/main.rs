@@ -1,9 +1,5 @@
 use std::{io};
 use std::process::Command;
-mod cpu_evaluation;
-mod mouse_tracker;
-mod audio;
-mod backup;
 
 fn main() -> io::Result<()>{
     println!("Avvio del programma di config...");
