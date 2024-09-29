@@ -1,5 +1,4 @@
 use std::{process, thread};
-use std::io::Read;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use sysinfo::Pid;

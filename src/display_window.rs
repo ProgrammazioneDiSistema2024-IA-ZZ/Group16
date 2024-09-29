@@ -79,7 +79,10 @@ impl eframe::App for BackupApp {
 // Funzione per avviare la GUI solo se `config.toml` non esiste
 pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
     if !Path::new("config.toml").exists() {
-        let options = eframe::NativeOptions::default();
+        let options = eframe::NativeOptions {
+            viewport: egui::ViewportBuilder::default().with_inner_size([400f32, 250f32]),
+            ..Default::default()
+        };
         eframe::run_native(
             "Backup Configuration",
             options,
