@@ -1,28 +1,32 @@
-use std::{io};
-use std::process::Command;
+use std::{io, process::Command};
+use sysinfo::Pid;
 
-fn main() -> io::Result<()>{
+mod cpu_evaluation;
+
+fn main() -> io::Result<()> {
     println!("Avvio del programma di config...");
 
-    let output = Command::new("cargo")
+    // Start the config_program and capture its PID
+    let config_program = Command::new("cargo")
         .arg("run")
         .arg("--bin")
         .arg("config_program")
-        .output()?;
+        .output()?;  // `spawn` instead of `output` to get the PID
 
-    if output.status.success(){
-        Command::new("cargo")
+    // If config_program was successful, start backup_program
+    if config_program.status.success() {
+        let backup_program = Command::new("cargo")
             .arg("run")
             .arg("--bin")
             .arg("backup_program")
-            .output()?;
-    }else {
+            .spawn()?;
+
+        let backup_pid = Pid::from_u32(backup_program.id());
+        cpu_evaluation::start_cpu_monitor(backup_pid, 10);
+        backup_program.wait_with_output().expect("TODO: panic message");
+    } else {
         eprintln!("Errore");
     }
 
     Ok(())
-    /*
-
-    */
 }
-
