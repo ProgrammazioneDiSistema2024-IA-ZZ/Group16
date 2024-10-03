@@ -180,6 +180,7 @@ pub fn track_mouse(window_enable: Arc<Mutex<bool>>, screen_width: f64, screen_he
                     *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
                 }
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Cancel {
+                    println!("Backup cancelled");
                     play_sound(2);
                     points.clear();
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
