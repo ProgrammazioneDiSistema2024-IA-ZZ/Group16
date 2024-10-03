@@ -22,7 +22,7 @@ fn main() -> io::Result<()> {
             .spawn()?;
 
         let backup_pid = Pid::from_u32(backup_program.id());
-        cpu_evaluation::start_cpu_monitor(backup_pid, 10);
+        cpu_evaluation::start_cpu_monitor(backup_pid, 30);
         backup_program.wait_with_output().expect("TODO: panic message");
     } else {
         eprintln!("Errore");

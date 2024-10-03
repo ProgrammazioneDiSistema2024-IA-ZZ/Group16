@@ -15,37 +15,40 @@ fn create_log_file() -> std::fs::File {
 }
 
 /// Log CPU usage for a given process using its PID.
-fn log_cpu_usage(pid: Pid, log_file: &mut std::fs::File, sys: &mut System) {
-    // Refresh processes to get up-to-date information
-    sys.refresh_processes(ProcessesToUpdate::Some(&[pid]));
-
-    if let Some(process) = sys.process(pid) {
-        // Format current time and CPU usage
-        let current_time = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        let log_entry = format!(
-            "{} - CPU Usage: {:.6}%",
-            current_time,
-            process.cpu_usage() / sys.cpus().len() as f32,
-        );
-        writeln!(log_file, "{}", log_entry).expect("Unable to write to log file");
-    } else {
-        // Log error if process with given PID is not found
-        let current_time = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
-        let log_entry = format!("{} - Process with PID {} not found", current_time, pid);
-        writeln!(log_file, "{}", log_entry).expect("Unable to write to log file");
-    }
+fn log_cpu_usage(average_cpu_usage: f32, log_file: &mut std::fs::File, sys: &mut System) {
+    let current_time = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let log_entry = format!(
+        "{} - CPU Usage: {:.6}%",
+        current_time,
+        average_cpu_usage,
+    );
+    writeln!(log_file, "{}", log_entry).expect("Unable to write to log file");
 }
 
 /// Start monitoring CPU usage for a specific process.
 pub fn start_cpu_monitor(pid: Pid, interval_secs: u64) {
     let mut log_file = create_log_file(); // Open log file
-    let mut sys = System::new_all();      // Create sysinfo system object
+    let mut sys = System::new_all();  // Create sysinfo system object
+    let mut average_cpu_usage = 0.0;
+    let mut count = 0;
 
     // Spawn a thread for continuous monitoring
     thread::spawn(move || {
         loop {
-            log_cpu_usage(pid, &mut log_file, &mut sys);
-            thread::sleep(Duration::from_secs(interval_secs));
+            thread::sleep(Duration::from_secs(1));
+
+            count += 1;
+
+            sys.refresh_processes(ProcessesToUpdate::Some(&[pid]));
+
+            if let Some(process) = sys.process(pid){
+                average_cpu_usage += process.cpu_usage() / sys.cpus().len() as f32;
+            }
+
+            if count == interval_secs{
+                log_cpu_usage(average_cpu_usage / count as f32, &mut log_file, &mut sys);
+                count = 0;
+            }
         }
     });
 }
