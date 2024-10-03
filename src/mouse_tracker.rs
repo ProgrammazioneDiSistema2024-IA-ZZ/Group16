@@ -24,7 +24,7 @@ fn is_near(p1: &Point, p2: &Point, tolerance: f64) -> Action {
     if distance(p1, p2) <= tolerance {
         Action::Confirm
     } else {
-        Action::Cancel
+        Action::Background
     }
 }
 
@@ -65,7 +65,7 @@ fn contains_corners(
         if found_top_left && found_top_right && found_bottom_left && found_bottom_right {
             Action::Confirm
         } else {
-            Action::Cancel
+            Action::Background
         }
     } else {
         // Definisci gli angoli necessari
@@ -99,7 +99,7 @@ fn contains_corners(
         }
 
         // Se non è stato trovato nessun percorso specifico, ritorna false di default
-        Action::Cancel
+        Action::Background
     }
 }
 
@@ -137,7 +137,7 @@ pub fn track_mouse(window_enable: Arc<Mutex<bool>>, screen_width: f64, screen_he
                     *enabled_ref = true;  // Cambia qui lo stato di tracking_enabled
                 }
 
-                if !enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Modify {
+                if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Modify {
                     fs::remove_file("config.toml").unwrap();
                     // Start the config_program and capture its PID
                     let config_program = Command::new("cargo")
@@ -178,7 +178,6 @@ pub fn track_mouse(window_enable: Arc<Mutex<bool>>, screen_width: f64, screen_he
                     points.clear();
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
                     *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
-                    //std::process::exit(0);  // Esci dal programma quando viene trovato un "+"
                 }
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Cancel {
                     play_sound(2);
