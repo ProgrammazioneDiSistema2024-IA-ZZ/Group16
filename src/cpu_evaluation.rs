@@ -15,7 +15,7 @@ fn create_log_file() -> std::fs::File {
 }
 
 /// Log CPU usage for a given process using its PID.
-fn log_cpu_usage(average_cpu_usage: f32, log_file: &mut std::fs::File, sys: &mut System) {
+fn log_cpu_usage(average_cpu_usage: f32, log_file: &mut std::fs::File) {
     let current_time = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
     let log_entry = format!(
         "{} - CPU Usage: {:.6}%",
@@ -46,7 +46,7 @@ pub fn start_cpu_monitor(pid: Pid, interval_secs: u64) {
             }
 
             if count == interval_secs{
-                log_cpu_usage(average_cpu_usage / count as f32, &mut log_file, &mut sys);
+                log_cpu_usage(average_cpu_usage / count as f32, &mut log_file);
                 count = 0;
             }
         }

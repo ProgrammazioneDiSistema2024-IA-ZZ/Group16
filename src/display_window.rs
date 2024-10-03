@@ -2,7 +2,8 @@ use eframe::egui::{self, CentralPanel, ComboBox};
 use std::fs;
 use std::path::Path;
 use std::io::Write;
-use egui::ViewportCommand;
+use egui::{Align, Color32, Layout, ViewportCommand};
+use rfd::FileDialog;
 
 // Struttura del Config per toml
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -38,23 +39,60 @@ impl BackupApp {
         let mut file = fs::File::create("config.toml").unwrap();
         file.write_all(toml_str.as_bytes()).unwrap();
     }
+
+    // Method to open file dialog and select directory
+    fn select_directory() -> Option<String> {
+        FileDialog::new()
+            .pick_folder()  // Opens folder dialog
+            .map(|path| path.display().to_string())  // Converts selected path to string
+    }
 }
 
 impl eframe::App for BackupApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         CentralPanel::default().show(ctx, |ui| {
+
+            // Set spacing and styling globally
+            let spacing = ui.spacing_mut();
+            spacing.item_spacing = egui::Vec2::new(5.0, 7.0); // Horizontal and vertical spacing between elements
+            spacing.text_edit_width = 300.0; // Increase text field width
+
             ui.heading("Backup Configuration");
 
-            // Campo per selezionare il percorso sorgente
             ui.label("Source Path:");
-            ui.text_edit_singleline(&mut self.source_path);
 
-            // Campo per selezionare il percorso destinazione
+            ui.horizontal(|ui| {
+                // Campo per selezionare il percorso sorgente
+                let input = ui.text_edit_singleline(&mut self.source_path);
+
+                input.highlight();
+
+                // Button to open folder dialog
+                if ui.button("...").clicked() {
+                    if let Some(path) = BackupApp::select_directory() {
+                        self.source_path = path;
+                    }
+                }
+            });
+
             ui.label("Destination Path:");
-            ui.text_edit_singleline(&mut self.destination_path);
+
+            ui.horizontal(|ui| {
+                // Campo per selezionare il percorso destinazione
+                let input = ui.text_edit_singleline(&mut self.destination_path);
+
+                input.highlight();
+
+                if ui.button("...").clicked() {
+                    if let Some(path) = BackupApp::select_directory(){
+                        self.destination_path = path;
+                    }
+                }
+            });
 
             // ComboBox per scegliere il tipo di backup
             ui.label("Backup Type:");
+
             ComboBox::from_label("")
                 .selected_text(&self.backup_type)
                 .show_ui(ui, |ui| {
@@ -65,13 +103,19 @@ impl eframe::App for BackupApp {
 
             // Campo per inserire le estensioni da includere nel backup
             ui.label("File Extensions (comma separated):");
-            ui.text_edit_singleline(&mut self.extensions_to_backup);
 
-            // Bottone per chiudere e salvare la configurazione
-            if ui.button("Save and Exit").clicked() {
-                self.save_config();
-                ctx.send_viewport_cmd(ViewportCommand::Close);
-            }
+            let input  = ui.text_edit_singleline(&mut self.extensions_to_backup);
+
+            input.highlight();
+
+            ui.with_layout(Layout::top_down(Align::Center), |ui| {
+                let save_button_color = Color32::from_rgb(150, 255, 100); // Custom button color
+
+                if ui.add(egui::Button::new("Save and Exit").fill(save_button_color)).clicked() {
+                    self.save_config();
+                    ctx.send_viewport_cmd(ViewportCommand::Close);
+                }
+            });
         });
     }
 }
@@ -80,7 +124,7 @@ impl eframe::App for BackupApp {
 pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
     if !Path::new("config.toml").exists() {
         let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size([400f32, 250f32]),
+            viewport: egui::ViewportBuilder::default().with_inner_size([350f32, 250f32]),
             ..Default::default()
         };
         eframe::run_native(
