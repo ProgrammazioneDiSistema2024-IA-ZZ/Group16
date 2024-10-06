@@ -28,6 +28,21 @@ fn is_near(p1: &Point, p2: &Point, tolerance: f64) -> Action {
     }
 }
 
+fn is_border (p1: &Point, p2: &Point, direction: &str) -> bool {
+    match direction {
+        "horizontal" => (p1.y - p2.y).abs() < 30.0,  // Movimento orizzontale
+        "vertical" => (p1.x - p2.x).abs() < 30.0,    // Movimento verticale
+        "diagonal" => {
+            let delta_x = p2.x - p1.x;
+            let delta_y = p2.y - p1.y;
+
+            // Verifica se il movimento è diagonale (sia x che y devono variare)
+            (delta_x.abs() > 30.0 && delta_y.abs() > 30.0) && (delta_x / delta_y).abs() >= 1.0
+        },
+        _ => false,
+    }
+}
+
 /// Funzione per controllare se il vettore di punti contiene i punti agli angoli dello schermo
 fn contains_corners(
     points: &Vec<Point>,
@@ -47,18 +62,48 @@ fn contains_corners(
         let mut found_bottom_left = false;
         let mut found_bottom_right = false;
 
+        let mut previous_point = None;
+
+
         for point in points {
             if is_near(&point, &top_left, tolerance) == Action::Confirm{
                 found_top_left = true;
+                previous_point = Some(point.clone());
             }
-            if found_top_left && is_near(&point, &top_right, tolerance) == Action::Confirm{
-                found_top_right = true;
+            if is_near(&point, &top_right, tolerance) == Action::Confirm{
+                if let Some(prev) = &previous_point {
+                    if found_top_left && is_border(prev, point, "horizontal") {
+                        found_top_right = true;
+                        previous_point = Some(point.clone());
+                    } else {
+                        found_top_left = false;
+                        found_top_right = false;
+                        found_bottom_left = false;
+                        found_bottom_right = false;
+                }}
             }
-            if found_top_right && is_near(&point, &bottom_right, tolerance) == Action::Confirm{
-                found_bottom_right = true;
+            if is_near(&point, &bottom_right, tolerance) == Action::Confirm{
+                if let Some(prev) = &previous_point{
+                    if found_top_right && is_border(prev, point, "vertical"){
+                        found_bottom_right = true;
+                        previous_point = Some(point.clone());
+                    } else {
+                        found_top_left = false;
+                        found_top_right = false;
+                        found_bottom_left = false;
+                        found_bottom_right = false;
+                }}
             }
-            if found_bottom_right && is_near(&point, &bottom_left, tolerance) == Action::Confirm{
-                found_bottom_left = true;
+            if is_near(&point, &bottom_left, tolerance) == Action::Confirm{
+                if let Some(prev) = &previous_point{
+                    if found_bottom_right && is_border(prev, point, "horizontal") {
+                        found_bottom_left = true;
+                    } else {
+                        found_top_left = false;
+                        found_top_right = false;
+                        found_bottom_left = false;
+                        found_bottom_right = false;
+                    }}
             }
         }
         if found_top_left && found_top_right && found_bottom_left && found_bottom_right {
@@ -74,25 +119,39 @@ fn contains_corners(
         let top_right = Point { x: screen_width, y: 0.00 };
 
         let mut passed_bottom_left = false;
+        let mut previous_point = None;
 
         for point in points {
             // Se il mouse è passato dall'angolo in basso a sinistra
             if is_near(&point, &bottom_left, tolerance) == Action::Confirm {
                 passed_bottom_left = true;
+                previous_point = Some(point.clone());
             }
 
             if passed_bottom_left {
-                // Se il mouse va dall'angolo in basso a sinistra a quello in basso a destra, ritorna true
+                // Se il mouse va dall'angolo in basso a sinistra a quello in basso a destra, confermo il backup
                 if is_near(&point, &bottom_right, tolerance) == Action::Confirm {
-                    return Action::Confirm;
+                    if let Some(prev) = &previous_point {
+                        if is_border(prev, point, "horizontal") {
+                            return Action::Confirm;
+                        }
+                    }
                 }
-                // Se il mouse va dall'angolo in basso a sinistra a quello in alto a sinistra, ritorna false
+                // Se il mouse va dall'angolo in basso a sinistra a quello in alto a sinistra, annullo il backup
                 if is_near(&point, &top_left, tolerance) == Action::Confirm {
-                    return Action::Cancel;
+                    if let Some(prev) = &previous_point {
+                        if is_border(prev, point, "vertical") {
+                            return Action::Cancel;
+                        }
+                    }
                 }
                 // Se il mouse va dall'angolo in basso a sinistra a quello in alto a destra, ritorna false
                 if is_near(&point, &top_right, tolerance) == Action::Confirm {
-                    return Action::Modify;
+                    if let Some(prev) = &previous_point {
+                        if is_border(prev, point, "diagonal") {
+                            return Action::Modify;
+                        }
+                    }
                 }
             }
         }
