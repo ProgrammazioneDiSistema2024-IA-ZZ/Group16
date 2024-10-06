@@ -1,13 +1,13 @@
-use std::{env, process, thread};
-use std::sync::{Arc, Mutex};
+use std::{process, thread};
 use std::time::Duration;
 use sysinfo::Pid;
+use eframe::{egui, Frame};
 
 mod cpu_evaluation;
 mod mouse_tracker;
-
 mod audio;
 mod backup;
+mod display_window;
 
 #[cfg(target_os = "windows")]
 fn get_screen_resolution() -> (usize, usize){
@@ -48,18 +48,13 @@ fn main() {
     let (width, height) = get_screen_resolution();
     println!("Risoluzione dello schermo: {}, {}", width, height);
 
-    /* Mouse Tracker enable */
-    let window_enable = Arc::new(Mutex::new(false));
-    let window_enable_clone = Arc::clone(&window_enable);
-    mouse_tracker::track_mouse(window_enable_clone.clone(), width as f64, height as f64);
+    mouse_tracker::track_mouse(width as f64, height as f64);
 
+    let backup_pid = Pid::from_u32(process::id());
+    cpu_evaluation::start_cpu_monitor(backup_pid, 30);
 
     // Loop to keep the program alive
     loop {
         thread::sleep(Duration::from_secs(1)); // faccio un ciclo al secondo
-        let mut enable = window_enable_clone.lock().unwrap();
-        if *enable {
-            *enable = false;
-        }
     }
 }

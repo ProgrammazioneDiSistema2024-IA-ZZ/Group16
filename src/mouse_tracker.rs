@@ -61,7 +61,6 @@ fn contains_corners(
                 found_bottom_left = true;
             }
         }
-
         if found_top_left && found_top_right && found_bottom_left && found_bottom_right {
             Action::Confirm
         } else {
@@ -108,7 +107,7 @@ fn distance(p1: &Point, p2: &Point) -> f64 {
     ((p1.x - p2.x).powi(2) + (p2.y - p1.y).powi(2)).sqrt()
 }
 
-pub fn track_mouse(window_enable: Arc<Mutex<bool>>, screen_width: f64, screen_height: f64) {
+pub fn track_mouse(screen_width: f64, screen_height: f64) {
     println!("Tracciamento abilitato!");
 
     let points = Arc::new(Mutex::new(Vec::<Point>::new()));
@@ -135,6 +134,13 @@ pub fn track_mouse(window_enable: Arc<Mutex<bool>>, screen_width: f64, screen_he
                     points.clear();
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
                     *enabled_ref = true;  // Cambia qui lo stato di tracking_enabled
+                    Command::new("cargo")
+                        .arg("run")
+                        .arg("--bin")
+                        .arg("config_program")
+                        .arg("backup")
+                        .spawn().expect("Error generating new process");  // `spawn` instead of `output` to get the PID
+                    //TODO: Close the GUI when one of the commands are performed
                 }
 
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Modify {
@@ -144,6 +150,7 @@ pub fn track_mouse(window_enable: Arc<Mutex<bool>>, screen_width: f64, screen_he
                         .arg("run")
                         .arg("--bin")
                         .arg("config_program")
+                        .arg("config")
                         .output();  // `spawn` instead of `output` to get the PID
 
                     points.clear();
@@ -172,14 +179,12 @@ pub fn track_mouse(window_enable: Arc<Mutex<bool>>, screen_width: f64, screen_he
                     }
 
                     play_sound(1);
-                    // enable show window
-                    let mut win_en = window_enable.lock().unwrap();
-                    *win_en = true;
                     points.clear();
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
                     *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
                 }
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Cancel {
+                    println!("Backup cancelled");
                     play_sound(2);
                     points.clear();
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
