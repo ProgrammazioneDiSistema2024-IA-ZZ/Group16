@@ -1,5 +1,5 @@
 use sysinfo::{System, Pid, ProcessesToUpdate};
-use std::{fs::OpenOptions, thread};
+use std::{env, fs::OpenOptions, thread};
 use chrono::Local;
 use std::io::Write;
 use std::time::Duration;
@@ -10,7 +10,7 @@ fn create_log_file() -> std::fs::File {
     OpenOptions::new()
         .create(true)
         .append(true)
-        .open("cpu_log.txt")
+        .open(env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("cpu_log.txt"))
         .expect("Unable to create or open log file")
 }
 

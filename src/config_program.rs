@@ -6,7 +6,6 @@ fn main(){
 
     // Recupera gli argomenti passati al programma
     let args: Vec<String> = env::args().collect();
-
     let last_arg = args.last().unwrap();
 
     match last_arg.as_str() {
@@ -16,7 +15,7 @@ fn main(){
             }
         },
         "config" => {
-            if let Err(e) = display_window::show_config_gui() {
+            if let Err(e) = display_window::show_gui_if_needed() {
                 eprintln!("Errore nella generazione della GUI: {}", e);
             }
         },

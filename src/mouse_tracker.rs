@@ -1,6 +1,7 @@
 use rdev::{listen, Event, EventType};
 use std::sync::{Arc, Mutex};
-use std::{fs, thread};
+use std::{env, fs, thread};
+use std::path::PathBuf;
 use std::process::Command;
 use crate::audio::play_sound;
 use crate::{backup};
@@ -193,24 +194,60 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                     points.clear();
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
                     *enabled_ref = true;  // Cambia qui lo stato di tracking_enabled
-                    Command::new("cargo")
-                        .arg("run")
-                        .arg("--bin")
-                        .arg("config_program")
-                        .arg("backup")
-                        .spawn().expect("Error generating new process");  // `spawn` instead of `output` to get the PID
+                    // Command::new("cargo")
+                    //     .arg("run")
+                    //     .arg("--bin")
+                    //     .arg("config_program")
+                    //     .arg("backup")
+                    //     .spawn().expect("Error generating new process");  // `spawn` instead of `output` to get the PID
+
+                    // fn launch_program() -> Result<(), Box<dyn std::error::Error>> {
+                    //     Command::new(PathBuf::from(env::current_exe()?.parent().unwrap().join("config_program")))
+                    //         .arg("backup")
+                    //         .spawn()?;
+                    //     Ok(())
+                    // }
+
+                    if let Ok(exe_path) = env::current_exe() {
+                        if let Some(parent_path) = exe_path.parent() {
+                            let program_path = parent_path.join("config_program");
+                            if let Err(e) = Command::new(program_path).arg("backup").spawn() {
+                                eprintln!("Failed to spawn process: {}", e);
+                            }
+                        } else {
+                            eprintln!("Failed to find parent directory.");
+                        }
+                    } else {
+                        eprintln!("Failed to get current executable path.");
+                    }
+
+                    // let _ = Command::new(PathBuf::from(env::current_exe()?.parent().unwrap().join("config_program"))).arg("backup").output()?;
                     //TODO: Close the GUI when one of the commands are performed
                 }
 
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Modify {
-                    fs::remove_file("config.toml").unwrap();
-                    // Start the config_program and capture its PID
-                    let config_program = Command::new("cargo")
-                        .arg("run")
-                        .arg("--bin")
-                        .arg("config_program")
-                        .arg("config")
-                        .output();  // `spawn` instead of `output` to get the PID
+                    fs::remove_file(env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("config.toml"))
+                        .expect("Error deleting file");
+                    // // Start the config_program and capture its PID
+                    // let config_program = Command::new("cargo")
+                    //     .arg("run")
+                    //     .arg("--bin")
+                    //     .arg("config_program")
+                    //     .arg("config")
+                    //     .output();  // `spawn` instead of `output` to get the PID
+
+                    if let Ok(exe_path) = env::current_exe() {
+                        if let Some(parent_path) = exe_path.parent() {
+                            let program_path = parent_path.join("config_program");
+                            if let Err(e) = Command::new(program_path).arg("config").spawn() {
+                                eprintln!("Failed to spawn process: {}", e);
+                            }
+                        } else {
+                            eprintln!("Failed to find parent directory.");
+                        }
+                    } else {
+                        eprintln!("Failed to get current executable path.");
+                    }
 
                     points.clear();
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
@@ -220,7 +257,7 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                 // Se il tracciamento è abilitato, verifica se viene disegnato un "+", e non solo gli angoli
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Confirm {
 
-                    let config = backup::read_config("config.toml");
+                    let config = backup::read_config(env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("config.toml").to_str().unwrap());
 
                     // faccio il backup
                     match backup::backup_files(&config) {

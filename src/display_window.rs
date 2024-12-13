@@ -1,6 +1,6 @@
 use eframe::egui::{self, CentralPanel, ComboBox};
-use std::fs;
-use std::path::Path;
+use std::{env, fs};
+use std::path::{Path, PathBuf};
 use std::io::Write;
 use eframe::Frame;
 use egui::{Align, Color32, Context, Layout, RichText, ViewportCommand, Window};
@@ -37,7 +37,7 @@ impl ConfigWindow {
                 .collect(),
         };
         let toml_str = toml::to_string(&config).unwrap();
-        let mut file = fs::File::create("config.toml").unwrap();
+        let mut file = fs::File::create(env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("config.toml")).unwrap();
         file.write_all(toml_str.as_bytes()).unwrap();
     }
 
@@ -47,6 +47,7 @@ impl ConfigWindow {
             .pick_folder()  // Opens folder dialog
             .map(|path| path.display().to_string())  // Converts selected path to string
     }
+
 }
 
 impl eframe::App for ConfigWindow {
@@ -116,8 +117,10 @@ impl eframe::App for ConfigWindow {
 }
 
 // Funzione per avviare la GUI solo se `config.toml` non esiste
-pub fn show_config_gui() -> Result<(), eframe::Error> {
-    if !Path::new("config.toml").exists() {
+pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
+    println!("Verifica se il file di configurazione esiste...");
+
+    if !env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("config.toml").exists() {
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default().with_inner_size([350f32, 250f32]),
             ..Default::default()
