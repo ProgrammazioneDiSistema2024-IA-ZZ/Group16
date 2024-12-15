@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use std::process::Command;
 use crate::audio::play_sound;
 use crate::{backup};
-
 #[derive(Debug, Clone)]
 struct Point{
     x: f64,
@@ -170,6 +169,11 @@ fn distance(p1: &Point, p2: &Point) -> f64 {
 pub fn track_mouse(screen_width: f64, screen_height: f64) {
     println!("Tracciamento abilitato!");
 
+    let exe_path: PathBuf = PathBuf::from(env::current_exe().unwrap().parent().unwrap());
+    let audio_path: PathBuf = exe_path.parent().unwrap().join("Resources/audio/");
+    let config_file_path: PathBuf = exe_path.parent().unwrap().join("Resources/");
+
+
     let points = Arc::new(Mutex::new(Vec::<Point>::new()));
     let points_clone = Arc::clone(&points);
     let tracking_enabled = Arc::new(Mutex::new(false));
@@ -208,17 +212,21 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                     //     Ok(())
                     // }
 
-                    if let Ok(exe_path) = env::current_exe() {
-                        if let Some(parent_path) = exe_path.parent() {
-                            let program_path = parent_path.join("config_program");
-                            if let Err(e) = Command::new(program_path).arg("backup").spawn() {
-                                eprintln!("Failed to spawn process: {}", e);
-                            }
-                        } else {
-                            eprintln!("Failed to find parent directory.");
-                        }
-                    } else {
-                        eprintln!("Failed to get current executable path.");
+                    // if let Ok(exe_path) = env::current_exe() {
+                    //     if let Some(parent_path) = exe_path.parent() {
+                    //         let program_path = parent_path.join("config_program");
+                    //         if let Err(e) = Command::new(exe_path.join("config_program")).arg("backup").spawn() {
+                    //             eprintln!("Failed to spawn process: {}", e);
+                    //         }
+                    //     } else {
+                    //         eprintln!("Failed to find parent directory.");
+                    //     }
+                    // } else {
+                    //     eprintln!("Failed to get current executable path.");
+                    // }
+
+                    if let Err(e) = Command::new(exe_path.join("config_program")).arg("backup").spawn() {
+                        eprintln!("Failed to spawn process: {}", e);
                     }
 
                     // let _ = Command::new(PathBuf::from(env::current_exe()?.parent().unwrap().join("config_program"))).arg("backup").output()?;
@@ -226,7 +234,7 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                 }
 
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Modify {
-                    fs::remove_file(env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("config.toml"))
+                    fs::remove_file(config_file_path.join("config.toml"))
                         .expect("Error deleting file");
                     // // Start the config_program and capture its PID
                     // let config_program = Command::new("cargo")
@@ -236,28 +244,33 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                     //     .arg("config")
                     //     .output();  // `spawn` instead of `output` to get the PID
 
-                    if let Ok(exe_path) = env::current_exe() {
-                        if let Some(parent_path) = exe_path.parent() {
-                            let program_path = parent_path.join("config_program");
-                            if let Err(e) = Command::new(program_path).arg("config").spawn() {
-                                eprintln!("Failed to spawn process: {}", e);
-                            }
-                        } else {
-                            eprintln!("Failed to find parent directory.");
-                        }
-                    } else {
-                        eprintln!("Failed to get current executable path.");
+
+                    // if let Ok(exe_path) = env::current_exe() {
+                    //     if let Some(parent_path) = exe_path.parent() {
+                    //         let program_path = parent_path.join("config_program");
+                    //         if let Err(e) = Command::new(program_path).arg("config").spawn() {
+                    //             eprintln!("Failed to spawn process: {}", e);
+                    //         }
+                    //     } else {
+                    //         eprintln!("Failed to find parent directory.");
+                    //     }
+                    // } else {
+                    //     eprintln!("Failed to get current executable path.");
+                    // }
+
+                    if let Err(e) = Command::new(exe_path.join("config_program")).arg("config").spawn() {
+                        eprintln!("Failed to spawn process: {}", e);
                     }
 
                     points.clear();
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
-                    *enabled_ref = true;  // Cambia qui lo stato di tracking_enabled
+                    *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
                 }
 
                 // Se il tracciamento è abilitato, verifica se viene disegnato un "+", e non solo gli angoli
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Confirm {
 
-                    let config = backup::read_config(env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("config.toml").to_str().unwrap());
+                    let config = backup::read_config(config_file_path.join("config.toml").to_str().unwrap());
 
                     // faccio il backup
                     match backup::backup_files(&config) {
@@ -280,6 +293,7 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                     *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
                 }
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Cancel {
+
                     println!("Backup cancelled");
                     play_sound(2);
                     points.clear();

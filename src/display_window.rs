@@ -2,6 +2,7 @@ use eframe::egui::{self, CentralPanel, ComboBox};
 use std::{env, fs};
 use std::path::{Path, PathBuf};
 use std::io::Write;
+use std::sync::{Arc, Mutex};
 use eframe::Frame;
 use egui::{Align, Color32, Context, Layout, RichText, ViewportCommand, Window};
 use rfd::FileDialog;
@@ -26,7 +27,7 @@ struct ConfigWindow {
 
 impl ConfigWindow {
     // Metodo per salvare il file di configurazione
-    fn save_config(&self) {
+    fn save_config(&self, config_file_path: PathBuf) {
         let config = Config {
             source_path: self.source_path.clone(),
             destination_path: self.destination_path.clone(),
@@ -37,7 +38,7 @@ impl ConfigWindow {
                 .collect(),
         };
         let toml_str = toml::to_string(&config).unwrap();
-        let mut file = fs::File::create(env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("config.toml")).unwrap();
+        let mut file = fs::File::create(config_file_path.join("config.toml")).unwrap();
         file.write_all(toml_str.as_bytes()).unwrap();
     }
 
@@ -52,6 +53,11 @@ impl ConfigWindow {
 
 impl eframe::App for ConfigWindow {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
+        let exe_path: PathBuf = PathBuf::from(env::current_exe().unwrap().parent().unwrap());
+        let config_file_path: PathBuf;
+
+        config_file_path = exe_path.parent().unwrap().join("Resources/");
+
         CentralPanel::default().show(ctx, |ui| {
 
             // Set spacing and styling globally
@@ -108,7 +114,7 @@ impl eframe::App for ConfigWindow {
                 let save_button_color = Color32::from_rgb(100, 250, 100); // Custom button color
 
                 if ui.add(egui::Button::new("Save and Exit").fill(save_button_color)).clicked() {
-                    self.save_config();
+                    self.save_config(config_file_path);
                     ctx.send_viewport_cmd(ViewportCommand::Close);
                 }
             });
@@ -120,7 +126,13 @@ impl eframe::App for ConfigWindow {
 pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
     println!("Verifica se il file di configurazione esiste...");
 
-    if !env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("config.toml").exists() {
+    let exe_path: PathBuf = PathBuf::from(env::current_exe().unwrap().parent().unwrap());
+    let mut config_file_path;
+
+    config_file_path = exe_path.parent().unwrap().join("Resources/");
+
+
+    if !config_file_path.join("config.toml").exists() {
         let options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default().with_inner_size([350f32, 250f32]),
             ..Default::default()
@@ -137,10 +149,15 @@ pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
 }
 
 #[derive(Default)]
-struct BackupWindow;
+struct BackupWindow{
+    should_close: Arc<Mutex<bool>>
+}
+
+
 
 impl eframe::App for BackupWindow {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
+
         // Aggiungiamo un pop-up al centro dello schermo
         CentralPanel::default().show(ctx, |ui| {
                     ui.vertical_centered(|ui| {
@@ -172,6 +189,16 @@ pub fn show_backup_gui() -> Result<(), eframe::Error> {
     eframe::run_native(
         "Backup Confirmation",
         options,
-        Box::new(|_cc| Ok(Box::new(BackupWindow))),
+        Box::new(|_cc| Ok(Box::new(BackupWindow {should_close: Arc::new(Mutex::new(false))}))),
     )
+}
+
+pub fn close_backup_window(should_close: Arc<Mutex<bool> >) {
+    let mut should_close = should_close.lock().unwrap();
+    *should_close = true;
+}
+
+pub fn is_window_open(should_close: Arc<Mutex<bool>>) -> bool {
+    let should_close = should_close.lock().unwrap();
+    !*should_close
 }

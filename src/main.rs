@@ -2,12 +2,13 @@ use std::{io, process::Command};
 use sysinfo::Pid;
 use service_manager::*;
 use std::ffi::OsString;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::env;
 use std::error::Error;
 use std::process::Stdio;
 
 mod cpu_evaluation;
+
 
 fn is_service_installed(service_name: &str) -> Result<bool, Box<dyn Error>> {
     #[cfg(target_os = "windows")]
@@ -95,22 +96,25 @@ fn make_automated_service() {
 }
 
 fn main() -> io::Result<()> {
-    println!("Avvio del programma di config...");
+    // println!("Avvio del programma di config...");
     // println!("Percorso: {:?}", env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("assets/blip-131856.mp3"));
 
-    make_automated_service();
 
-    println!("Program path: {:?}", env::current_exe());
-    println!("AAAAAAA");
+    let exe_path: PathBuf = PathBuf::from(env::current_exe()?.parent().unwrap());
+    let config_program_path = exe_path.join("config_program");
+    let backup_program_path = exe_path.join("backup_program");
+    let config_file_path = exe_path.parent().unwrap().join("Resources/");
+
+    // make_automated_service();
+
     // Start the config_program and capture its PID
-    let config_program = Command::new(PathBuf::from(env::current_exe()?.parent().unwrap().join("config_program"))).arg("config")
-        .output()?;  // `spawn` instead of `output` to get the PID
-    println!("{:?}", config_program);
-    println!("BBBBBBB");
+    let config_program = Command::new(config_program_path).arg("config").output()?;  // `spawn` instead of `output` to get the PID
+
     // If config_program was successful, start backup_program
-    if config_program.status.success() {
-        let backup_program = Command::new(PathBuf::from(env::current_exe()?.parent().unwrap().join("backup_program")))
-            .spawn()?;
+    if config_program.status.success() && config_file_path.join("config.toml").exists() {
+        make_automated_service();
+
+        let backup_program = Command::new(backup_program_path).spawn()?;
 
         let backup_pid = Pid::from_u32(backup_program.id());
         cpu_evaluation::start_cpu_monitor(backup_pid, 30);
