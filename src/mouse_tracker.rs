@@ -179,10 +179,18 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
     let tracking_enabled = Arc::new(Mutex::new(false));
     let tracking_enabled_clone = Arc::clone(&tracking_enabled);
 
+
     thread::spawn(move || {
         listen(move |event: Event| {
             if let EventType::MouseMove { x, y } = event.event_type {
                 let point = Point { x, y };
+
+                /*println!("STA QUI");
+
+                if !config_file_path.join("config.toml").exists() {
+                    eprintln!("File di configurazione non trovato! Tracciamento disabilitato.");
+                    return;
+                }*/
 
                 // Controlla se il tracciamento è abilitato
                 let enabled = *tracking_enabled_clone.lock().unwrap();
@@ -194,10 +202,10 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
 
                 // Verifica se ci sono abbastanza punti per riconoscere gli angoli dello schermo
                 if !enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Confirm {
-                    play_sound(0);
-                    points.clear();
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
                     *enabled_ref = true;  // Cambia qui lo stato di tracking_enabled
+                    play_sound(0);
+                    points.clear();
                     // Command::new("cargo")
                     //     .arg("run")
                     //     .arg("--bin")
@@ -234,6 +242,10 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                 }
 
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Modify {
+                    points.clear();
+                    let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
+                    *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
+
                     fs::remove_file(config_file_path.join("config.toml"))
                         .expect("Error deleting file");
                     // // Start the config_program and capture its PID
@@ -262,9 +274,7 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                         eprintln!("Failed to spawn process: {}", e);
                     }
 
-                    points.clear();
-                    let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
-                    *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
+
                 }
 
                 // Se il tracciamento è abilitato, verifica se viene disegnato un "+", e non solo gli angoli
@@ -287,10 +297,10 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                         }
                     }
 
-                    play_sound(1);
-                    points.clear();
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
                     *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
+                    play_sound(1);
+                    points.clear();
                 }
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Cancel {
 
