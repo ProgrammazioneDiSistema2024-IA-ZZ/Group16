@@ -103,12 +103,13 @@ impl eframe::App for ConfigWindow {
                     ui.selectable_value(&mut self.backup_type, "full-disk".to_string(), "Full Disk");
                     ui.selectable_value(&mut self.backup_type, "directory".to_string(), "Directory");
                     ui.selectable_value(&mut self.backup_type, "selective".to_string(), "Selective");
+
                 });
 
-            // Campo per inserire le estensioni da includere nel backup
-            ui.label("File Extensions (comma separated):");
-
-            ui.text_edit_singleline(&mut self.extensions_to_backup);
+            if self.backup_type == "selective" {
+                ui.label("File Extensions (comma separated):");
+                ui.text_edit_singleline(&mut self.extensions_to_backup);
+            }
 
             ui.with_layout(Layout::top_down(Align::Center), |ui| {
                 let save_button_color = Color32::from_rgb(100, 250, 100); // Custom button color

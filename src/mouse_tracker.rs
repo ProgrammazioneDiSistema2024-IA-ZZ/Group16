@@ -185,12 +185,10 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
             if let EventType::MouseMove { x, y } = event.event_type {
                 let point = Point { x, y };
 
-                /*println!("STA QUI");
-
                 if !config_file_path.join("config.toml").exists() {
                     eprintln!("File di configurazione non trovato! Tracciamento disabilitato.");
                     return;
-                }*/
+                }
 
                 // Controlla se il tracciamento è abilitato
                 let enabled = *tracking_enabled_clone.lock().unwrap();
