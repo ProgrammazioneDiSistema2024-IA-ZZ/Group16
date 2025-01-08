@@ -21,13 +21,14 @@ struct Config {
 struct ConfigWindow {
     source_path: String,
     destination_path: String,
-    backup_type: String,
+    backup_type: String, // Default sarà impostato a "full-disk" manualmente
     extensions_to_backup: String, // Le estensioni sono inserite come stringa, verranno separate dopo
 }
 
 impl ConfigWindow {
     // Metodo per salvare il file di configurazione
     fn save_config(&self, config_file_path: PathBuf) {
+        println!("{:?}", self.backup_type);
         let config = Config {
             source_path: self.source_path.clone(),
             destination_path: self.destination_path.clone(),
@@ -42,38 +43,43 @@ impl ConfigWindow {
         file.write_all(toml_str.as_bytes()).unwrap();
     }
 
-    // Method to open file dialog and select directory
+    // Metodo per selezionare una directory tramite un file dialog
     fn select_directory() -> Option<String> {
         FileDialog::new()
-            .pick_folder()  // Opens folder dialog
-            .map(|path| path.display().to_string())  // Converts selected path to string
+            .pick_folder()  // Apre il dialogo per selezionare una cartella
+            .map(|path| path.display().to_string())  // Converte il percorso selezionato in stringa
     }
-
 }
 
 impl eframe::App for ConfigWindow {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
         let exe_path: PathBuf = PathBuf::from(env::current_exe().unwrap().parent().unwrap());
-        let config_file_path: PathBuf;
+        let config_file_path = exe_path.parent().unwrap().join("Resources/");
 
-        config_file_path = exe_path.parent().unwrap().join("Resources/");
+        // Variabile per tracciare gli errori
+        let mut error_message = String::new();
+
+        // Funzione per controllare la validità dei campi
+        let is_valid = !self.source_path.trim().is_empty()
+            && !self.destination_path.trim().is_empty()
+            && !self.backup_type.trim().is_empty()
+            && (self.backup_type != "selective" || !self.extensions_to_backup.trim().is_empty())
+            && self.source_path != self.destination_path; // Controllo sui percorsi
 
         CentralPanel::default().show(ctx, |ui| {
-
-            // Set spacing and styling globally
+            // Spaziatura e stile globali
             let spacing = ui.spacing_mut();
-            spacing.item_spacing = egui::Vec2::new(5.0, 7.0); // Horizontal and vertical spacing between elements
-            spacing.text_edit_width = 300.0; // Increase text field width
+            spacing.item_spacing = egui::Vec2::new(5.0, 7.0); // Spaziatura orizzontale e verticale
+            spacing.text_edit_width = 300.0; // Larghezza del campo di testo
 
             ui.heading("Backup Configuration");
 
             ui.label("Source Path:");
-
             ui.horizontal(|ui| {
                 // Campo per selezionare il percorso sorgente
                 ui.text_edit_singleline(&mut self.source_path);
 
-                // Button to open folder dialog
+                // Pulsante per aprire il file dialog
                 if ui.button("...").clicked() {
                     if let Some(path) = ConfigWindow::select_directory() {
                         self.source_path = path;
@@ -82,13 +88,13 @@ impl eframe::App for ConfigWindow {
             });
 
             ui.label("Destination Path:");
-
             ui.horizontal(|ui| {
                 // Campo per selezionare il percorso destinazione
-                let input = ui.text_edit_singleline(&mut self.destination_path);
+                ui.text_edit_singleline(&mut self.destination_path);
 
+                // Pulsante per aprire il file dialog
                 if ui.button("...").clicked() {
-                    if let Some(path) = ConfigWindow::select_directory(){
+                    if let Some(path) = ConfigWindow::select_directory() {
                         self.destination_path = path;
                     }
                 }
@@ -96,7 +102,6 @@ impl eframe::App for ConfigWindow {
 
             // ComboBox per scegliere il tipo di backup
             ui.label("Backup Type:");
-
             ComboBox::from_label("")
                 .selected_text(&self.backup_type)
                 .show_ui(ui, |ui| {
@@ -106,22 +111,59 @@ impl eframe::App for ConfigWindow {
 
                 });
 
+            // Mostra il campo "File Extensions" solo se il tipo di backup è "selective"
             if self.backup_type == "selective" {
                 ui.label("File Extensions (comma separated):");
                 ui.text_edit_singleline(&mut self.extensions_to_backup);
             }
 
-            ui.with_layout(Layout::top_down(Align::Center), |ui| {
-                let save_button_color = Color32::from_rgb(100, 250, 100); // Custom button color
+            // Controlla i campi e imposta il messaggio di errore se necessario
+            if self.source_path.trim().is_empty() {
+                error_message.push_str("Source path is required.\n");
+            }
+            if self.destination_path.trim().is_empty() {
+                error_message.push_str("Destination path is required.\n");
+            }
+            if self.backup_type == "selective" && self.extensions_to_backup.trim().is_empty() {
+                error_message.push_str("Extensions are required for selective backup.\n");
+            }
+            if self.source_path == self.destination_path {
+                error_message.push_str("Source and destination paths cannot be the same.\n");
+            }
 
-                if ui.add(egui::Button::new("Save and Exit").fill(save_button_color)).clicked() {
+            // Mostra il pulsante di salvataggio con un messaggio di errore, se necessario
+            ui.with_layout(Layout::top_down(Align::Center), |ui| {
+                // Colore del pulsante
+                let save_button_color = if is_valid {
+                    Color32::from_rgb(100, 250, 100) // Verde se valido
+                } else {
+                    Color32::from_rgb(200, 100, 100) // Rosso se non valido
+                };
+
+                // Mostra il pulsante e disabilitalo se non valido
+                let save_button = ui.add_enabled(
+                    is_valid,
+                    egui::Button::new("Save and Exit").fill(save_button_color),
+                );
+
+                // Salva e chiudi solo se il pulsante è cliccato ed è valido
+                if save_button.clicked() {
                     self.save_config(config_file_path);
                     ctx.send_viewport_cmd(ViewportCommand::Close);
+                }
+
+                // Mostra il messaggio di errore se ci sono campi non validi
+                if !is_valid {
+                    ui.add_space(10.0);
+                    ui.label(RichText::new(error_message).color(Color32::from_rgb(255, 0, 0)));
                 }
             });
         });
     }
 }
+
+
+
 
 // Funzione per avviare la GUI solo se `config.toml` non esiste
 pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
@@ -135,7 +177,7 @@ pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
 
     if !config_file_path.join("config.toml").exists() {
         let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size([350f32, 250f32]),
+            viewport: egui::ViewportBuilder::default().with_inner_size([350f32, 325f32]),
             ..Default::default()
         };
         eframe::run_native(

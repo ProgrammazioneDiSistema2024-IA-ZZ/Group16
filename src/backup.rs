@@ -68,7 +68,7 @@ pub(crate) fn backup_files(config: &Config) -> Result<(), BackupError> {
     let file_options = file::CopyOptions::new();
 
     match config.backup_type.as_str() {
-        "full_disk" | "directory" => {
+        "full-disk" | "directory" => {
             // Calculate size of directory
             let directory_size = calculate_directory_size(source_path)?;
 
