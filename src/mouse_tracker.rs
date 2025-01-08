@@ -185,10 +185,10 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
             if let EventType::MouseMove { x, y } = event.event_type {
                 let point = Point { x, y };
 
-                if !config_file_path.join("config.toml").exists() {
-                    eprintln!("File di configurazione non trovato! Tracciamento disabilitato.");
-                    return;
-                }
+                // if !config_file_path.join("config.toml").exists() {
+                //     eprintln!("File di configurazione non trovato! Tracciamento disabilitato.");
+                //     return;
+                // }
 
                 // Controlla se il tracciamento è abilitato
                 let enabled = *tracking_enabled_clone.lock().unwrap();
@@ -244,8 +244,11 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
                     *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
 
-                    fs::remove_file(config_file_path.join("config.toml"))
-                        .expect("Error deleting file");
+
+                    if(config_file_path.join("config.toml").exists()){
+                        fs::remove_file(config_file_path.join("config.toml")).expect("Error deleting file");
+                    }
+
                     // // Start the config_program and capture its PID
                     // let config_program = Command::new("cargo")
                     //     .arg("run")
@@ -278,26 +281,35 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                 // Se il tracciamento è abilitato, verifica se viene disegnato un "+", e non solo gli angoli
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Confirm {
 
-                    let config = backup::read_config(config_file_path.join("config.toml").to_str().unwrap());
+                    if config_file_path.join("config.toml").exists() {
+                        let config = backup::read_config(config_file_path.join("config.toml").to_str().unwrap());
 
-                    // faccio il backup
-                    match backup::backup_files(&config) {
-                        Ok(_) => println!("Backup completed successfully"),
-                        Err(e) => match e {
-                            backup::BackupError::SourceNotFound =>
-                                eprintln!("Backup failed: Source path does not exist"),
-                            backup::BackupError::InvalidBackupType =>
-                                eprintln!("Backup failed: Invalid backup type specified"),
-                            backup::BackupError::IoError(e) =>
-                                eprintln!("Backup failed due to IO error: {}", e),
-                            backup::BackupError::FsExtraError(e) =>
-                                eprintln!("Backup failed due to fs_extra error: {}", e),
+                        // faccio il backup
+                        match backup::backup_files(&config) {
+                            Ok(_) => println!("Backup completed successfully"),
+                            Err(e) => match e {
+                                backup::BackupError::SourceNotFound =>
+                                    eprintln!("Backup failed: Source path does not exist"),
+                                backup::BackupError::InvalidBackupType =>
+                                    eprintln!("Backup failed: Invalid backup type specified"),
+                                backup::BackupError::IoError(e) =>
+                                    eprintln!("Backup failed due to IO error: {}", e),
+                                backup::BackupError::FsExtraError(e) =>
+                                    eprintln!("Backup failed due to fs_extra error: {}", e),
+                            }
                         }
-                    }
 
+                        // let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
+                        // *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
+                        play_sound(1);
+                        // points.clear();
+                    }else{
+                        play_sound(2);
+                        eprintln!("File di configurazione non trovato! Backup non eseguito.");
+
+                    }
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
                     *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
-                    play_sound(1);
                     points.clear();
                 }
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Cancel {
