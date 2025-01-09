@@ -1,4 +1,6 @@
-use std::{process, thread};
+use std::{env, process, thread};
+use std::path::PathBuf;
+use std::process::Command;
 use std::time::Duration;
 use sysinfo::Pid;
 use eframe::{egui, Frame};
@@ -43,7 +45,7 @@ fn get_screen_resolution() -> (u32, u32){
     }
 }
 
-fn main() {
+fn get_started() {
     /* Get the monitor resolution */
     let (width, height) = get_screen_resolution();
     println!("Risoluzione dello schermo: {}, {}", width, height);
@@ -57,4 +59,28 @@ fn main() {
     loop {
         thread::sleep(Duration::from_secs(1)); // faccio un ciclo al secondo
     }
+}
+
+fn main() {
+
+    // Check if config.toml exists
+    let exe_path: PathBuf = PathBuf::from(env::current_exe().unwrap().parent().unwrap());
+    let config_program_path = exe_path.join("config_program");
+    let config_file_path = exe_path.parent().unwrap().join("Resources/");
+
+    println!("Percorso del file di configurazione: {:?}", config_file_path.join("config.toml"));
+
+    if !config_file_path.join("config.toml").exists() {
+        // Start the config_program and capture its PID
+        let config_program = Command::new(config_program_path).arg("config").output().expect("Failed to start");
+
+        println!("Service started successfully");
+
+        if config_program.status.success() && config_file_path.join("config.toml").exists() {
+            get_started();
+        }
+    } else {
+        get_started();
+    }
+
 }
