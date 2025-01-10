@@ -45,8 +45,22 @@ fn get_screen_resolution() -> (u32, u32){
     }
 }
 
-fn get_started() {
-    /* Get the monitor resolution */
+fn main() {
+    let exe_path: PathBuf = PathBuf::from(env::current_exe().unwrap().parent().unwrap());
+    let config_program_path = exe_path.join("config_program");
+    let config_file_path = exe_path.parent().unwrap().join("Resources/");
+
+    println!("Percorso del file di configurazione: {:?}", config_file_path.join("config.toml"));
+
+    // Check if config.toml exists.
+    // If not, start the config program. This is done in case system is rebooted, backup_program service is started but the config.toml is deleted.
+    if !config_file_path.join("config.toml").exists() {
+        Command::new(config_program_path).arg("config").spawn().expect("Failed to start config program");
+    }
+
+    /* Start the actual backup program */
+
+    // Get the monitor resolution
     let (width, height) = get_screen_resolution();
     println!("Risoluzione dello schermo: {}, {}", width, height);
 
@@ -58,29 +72,6 @@ fn get_started() {
     // Loop to keep the program alive
     loop {
         thread::sleep(Duration::from_secs(1)); // faccio un ciclo al secondo
-    }
-}
-
-fn main() {
-
-    // Check if config.toml exists
-    let exe_path: PathBuf = PathBuf::from(env::current_exe().unwrap().parent().unwrap());
-    let config_program_path = exe_path.join("config_program");
-    let config_file_path = exe_path.parent().unwrap().join("Resources/");
-
-    println!("Percorso del file di configurazione: {:?}", config_file_path.join("config.toml"));
-
-    if !config_file_path.join("config.toml").exists() {
-        // Start the config_program and capture its PID
-        let config_program = Command::new(config_program_path).arg("config").output().expect("Failed to start");
-
-        println!("Service started successfully");
-
-        if config_program.status.success() && config_file_path.join("config.toml").exists() {
-            get_started();
-        }
-    } else {
-        get_started();
     }
 
 }

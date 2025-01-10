@@ -64,9 +64,9 @@ fn make_automated_service() {
     match is_service_installed("com.backmeup") {
         Ok(installed) => {
             if installed {
-                println!("Service already installed and running");
+                // println!("Service already installed and running");
             } else {
-                println!("Service not installed, starting installation..");
+                // println!("Service not installed, starting installation..");
                 // Install our service using the underlying service management platform
                 manager.install(ServiceInstallCtx {
                     label: label.clone(),
@@ -86,10 +86,10 @@ fn make_automated_service() {
                 // }).expect("Failed to start");
             }
 
-            println!("Service started successfully");
+            // println!("Service started successfully");
         }
         Err(e) => {
-            eprintln!("Error during service check: {}", e);
+            // eprintln!("Error during service check: {}", e);
         }
     }
 
@@ -98,6 +98,9 @@ fn make_automated_service() {
 fn main() -> io::Result<()> {
     // println!("Avvio del programma di config...");
     // println!("Percorso: {:?}", env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("assets/blip-131856.mp3"));
+
+    // Sto iniziando a svarionare: stavo pensando se ha senso eliminare da qui il lancio di config_program dato che ora è incluso in backup_program qualora config.toml non esista
+    // A questo punto questo programma si occuperebbe solo di installare il servizio..
 
 
     let exe_path: PathBuf = PathBuf::from(env::current_exe()?.parent().unwrap());
@@ -108,21 +111,21 @@ fn main() -> io::Result<()> {
     // make_automated_service();
 
     // Start the config_program and capture its PID
-    let config_program = Command::new(config_program_path).arg("config").output()?;  // `spawn` instead of `output` to get the PID
+    // let config_program = Command::new(config_program_path).arg("config").output()?;  // `spawn` instead of `output` to get the PID
 
     // If config_program was successful, start backup_program
-    if config_program.status.success() && config_file_path.join("config.toml").exists() {
+    // if config_program.status.success() && config_file_path.join("config.toml").exists() {
         make_automated_service();
 
-        let backup_program = Command::new(backup_program_path).spawn()?;
-
-        let backup_pid = Pid::from_u32(backup_program.id());
-        cpu_evaluation::start_cpu_monitor(backup_pid, 30);
-        backup_program.wait_with_output().expect("TODO: panic message");
-    } else {
-        eprintln!("Errore");
-        eprintln!("Errore: {:?}", config_program);
-    }
+        // let backup_program = Command::new(backup_program_path).spawn()?;
+        //
+        // let backup_pid = Pid::from_u32(backup_program.id());
+        // cpu_evaluation::start_cpu_monitor(backup_pid, 30);
+        // backup_program.wait_with_output().expect("TODO: panic message");
+    // } else {
+    //     eprintln!("Errore");
+    //     eprintln!("Errore: {:?}", config_program);
+    // }
 
     Ok(())
 }
