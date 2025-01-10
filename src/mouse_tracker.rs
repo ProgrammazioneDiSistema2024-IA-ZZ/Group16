@@ -185,11 +185,6 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
             if let EventType::MouseMove { x, y } = event.event_type {
                 let point = Point { x, y };
 
-                // if !config_file_path.join("config.toml").exists() {
-                //     eprintln!("File di configurazione non trovato! Tracciamento disabilitato.");
-                //     return;
-                // }
-
                 // Controlla se il tracciamento è abilitato
                 let enabled = *tracking_enabled_clone.lock().unwrap();
 
@@ -204,39 +199,11 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                     *enabled_ref = true;  // Cambia qui lo stato di tracking_enabled
                     play_sound(0);
                     points.clear();
-                    // Command::new("cargo")
-                    //     .arg("run")
-                    //     .arg("--bin")
-                    //     .arg("config_program")
-                    //     .arg("backup")
-                    //     .spawn().expect("Error generating new process");  // `spawn` instead of `output` to get the PID
-
-                    // fn launch_program() -> Result<(), Box<dyn std::error::Error>> {
-                    //     Command::new(PathBuf::from(env::current_exe()?.parent().unwrap().join("config_program")))
-                    //         .arg("backup")
-                    //         .spawn()?;
-                    //     Ok(())
-                    // }
-
-                    // if let Ok(exe_path) = env::current_exe() {
-                    //     if let Some(parent_path) = exe_path.parent() {
-                    //         let program_path = parent_path.join("config_program");
-                    //         if let Err(e) = Command::new(exe_path.join("config_program")).arg("backup").spawn() {
-                    //             eprintln!("Failed to spawn process: {}", e);
-                    //         }
-                    //     } else {
-                    //         eprintln!("Failed to find parent directory.");
-                    //     }
-                    // } else {
-                    //     eprintln!("Failed to get current executable path.");
-                    // }
 
                     if let Err(e) = Command::new(exe_path.join("config_program")).arg("backup").spawn() {
                         eprintln!("Failed to spawn process: {}", e);
                     }
 
-                    // let _ = Command::new(PathBuf::from(env::current_exe()?.parent().unwrap().join("config_program"))).arg("backup").output()?;
-                    //TODO: Close the GUI when one of the commands are performed
                 }
 
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Modify {
@@ -249,33 +216,9 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                         fs::remove_file(config_file_path.join("config.toml")).expect("Error deleting file");
                     }
 
-                    // // Start the config_program and capture its PID
-                    // let config_program = Command::new("cargo")
-                    //     .arg("run")
-                    //     .arg("--bin")
-                    //     .arg("config_program")
-                    //     .arg("config")
-                    //     .output();  // `spawn` instead of `output` to get the PID
-
-
-                    // if let Ok(exe_path) = env::current_exe() {
-                    //     if let Some(parent_path) = exe_path.parent() {
-                    //         let program_path = parent_path.join("config_program");
-                    //         if let Err(e) = Command::new(program_path).arg("config").spawn() {
-                    //             eprintln!("Failed to spawn process: {}", e);
-                    //         }
-                    //     } else {
-                    //         eprintln!("Failed to find parent directory.");
-                    //     }
-                    // } else {
-                    //     eprintln!("Failed to get current executable path.");
-                    // }
-
                     if let Err(e) = Command::new(exe_path.join("config_program")).arg("config").spawn() {
                         eprintln!("Failed to spawn process: {}", e);
                     }
-
-
                 }
 
                 // Se il tracciamento è abilitato, verifica se viene disegnato un "+", e non solo gli angoli
