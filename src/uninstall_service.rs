@@ -15,7 +15,7 @@ fn main() -> windows_service::Result<()> {
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
     let service_access = ServiceAccess::QUERY_STATUS | ServiceAccess::STOP | ServiceAccess::DELETE;
-    let service = service_manager.open_service("backup_program", service_access)?;
+    let service = service_manager.open_service("BackMeUp", service_access)?;
 
     // The service will be marked for deletion as long as this function call succeeds.
     // However, it will not be deleted from the database until it is stopped and all open handles to it are closed.
@@ -34,16 +34,16 @@ fn main() -> windows_service::Result<()> {
     let timeout = Duration::from_secs(5);
     while start.elapsed() < timeout {
         if let Err(windows_service::Error::Winapi(e)) =
-            service_manager.open_service("backup_program", ServiceAccess::QUERY_STATUS)
+            service_manager.open_service("BackMeUp", ServiceAccess::QUERY_STATUS)
         {
             if e.raw_os_error() == Some(ERROR_SERVICE_DOES_NOT_EXIST as i32) {
-                println!("backup_program is deleted.");
+                println!("BackMeUp is deleted.");
                 return Ok(());
             }
         }
         sleep(Duration::from_secs(1));
     }
-    println!("backup_program is marked for deletion.");
+    println!("BackMeUp is marked for deletion.");
 
     Ok(())
 }

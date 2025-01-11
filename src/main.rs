@@ -7,6 +7,7 @@ use std::error::Error;
 
 mod cpu_evaluation;
 mod uninstall_service;
+mod service;
 
 #[cfg(target_os = "windows")]
 fn main() -> windows_service::Result<()> {
@@ -19,14 +20,14 @@ fn main() -> windows_service::Result<()> {
     let manager_access = ServiceManagerAccess::CONNECT | ServiceManagerAccess::CREATE_SERVICE;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
 
-    // Installs the service defined in `backup_program.rs`.
-    let service_binary_path = ::std::env::current_exe().unwrap().with_file_name("backup_program.exe");
+    // Installs the service defined in `service.rs`.
+    let service_binary_path = ::std::env::current_exe().unwrap().with_file_name("service.exe");
 
     let service_info = ServiceInfo {
-        name: OsString::from("backup_program"),
+        name: OsString::from("BackMeUp"),
         display_name: OsString::from("BackMeUp"),
         service_type: ServiceType::OWN_PROCESS,
-        start_type: ServiceStartType::OnDemand,
+        start_type: ServiceStartType::AutoStart,
         error_control: ServiceErrorControl::Normal,
         executable_path: service_binary_path,
         launch_arguments: vec![],

@@ -212,7 +212,7 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                     *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
 
 
-                    if config_file_path.join("config.toml").exists(){
+                    if(config_file_path.join("config.toml").exists()){
                         fs::remove_file(config_file_path.join("config.toml")).expect("Error deleting file");
                     }
 
