@@ -1,6 +1,6 @@
 use eframe::egui::{self, CentralPanel, ComboBox};
 use std::{env, fs};
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::io::Write;
 use std::sync::{Arc, Mutex};
 use eframe::Frame;

@@ -1,10 +1,3 @@
-use std::{env, process, thread};
-use std::path::PathBuf;
-use std::process::Command;
-use std::time::Duration;
-use sysinfo::Pid;
-use eframe::{egui, Frame};
-
 mod cpu_evaluation;
 mod mouse_tracker;
 mod audio;
@@ -17,8 +10,10 @@ fn get_screen_resolution() -> (usize, usize){
     use windows::Win32::UI::WindowsAndMessaging::GetSystemMetrics;
     use windows::Win32::UI::WindowsAndMessaging::{SM_CXSCREEN, SM_CYSCREEN};
 
-    let width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
-    let height = unsafe { GetSystemMetrics(SM_CYSCREEN)};
+    let mut width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
+    width = width + 25*width/100;
+    let mut height = unsafe { GetSystemMetrics(SM_CYSCREEN)};
+    height = height + 25*height/100;
     (width as usize, height as usize)
 }
 
@@ -95,7 +90,7 @@ mod backup_windows_service {
         service_control_handler::{self, ServiceControlHandlerResult},
         service_dispatcher, Result,
     };
-    use std::{process, thread};
+    use std::{process};
     use std::process::Command;
     use sysinfo::Pid;
     use crate::cpu_evaluation;
