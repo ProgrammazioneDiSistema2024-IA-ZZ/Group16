@@ -17,8 +17,10 @@ fn get_screen_resolution() -> (usize, usize){
     use windows::Win32::UI::WindowsAndMessaging::GetSystemMetrics;
     use windows::Win32::UI::WindowsAndMessaging::{SM_CXSCREEN, SM_CYSCREEN};
 
-    let width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
-    let height = unsafe { GetSystemMetrics(SM_CYSCREEN)};
+    let mut width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
+    width = width + 25*width/100;
+    let mut height = unsafe { GetSystemMetrics(SM_CYSCREEN)};
+    height = height + 25*height/100;
     (width as usize, height as usize)
 }
 
