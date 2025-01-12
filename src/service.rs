@@ -33,6 +33,10 @@ mod service {
     use egui::accesskit::DefaultActionVerb::Open;
     use sysinfo::Pid;
     use chrono::Local;
+    use quick_xml::events::{BytesEnd, BytesStart, Event};
+    use quick_xml::Reader;
+    use quick_xml::Writer;
+    use std::io::Cursor;
 
     const SERVICE_NAME: &str = "BackMeUp";
     const SERVICE_TYPE: ServiceType = ServiceType::OWN_PROCESS;
@@ -104,13 +108,6 @@ mod service {
             process_id: None,
         })?;
 
-        // For demo purposes this service sends a UDP packet once a second.
-        // let loopback_ip = IpAddr::from(LOOPBACK_ADDR);
-        // let sender_addr = SocketAddr::new(loopback_ip, 0);
-        // let receiver_addr = SocketAddr::new(loopback_ip, RECEIVER_PORT);
-        // let msg = PING_MESSAGE.as_bytes();
-        // let socket = UdpSocket::bind(sender_addr).unwrap();
-
         log_message("Servizio avviato 1 \n");
 
         loop {
@@ -166,56 +163,6 @@ mod service {
     }
 
     fn launch_backup_program() -> std::io::Result<()> {
-        // let mut output = Command::new("schtasks")
-        //     .args([
-        //         "/Create",
-        //         "/SC",
-        //         "ONCE",
-        //         "/TN",
-        //         "LaunchBackupProgram",
-        //         "/TR",
-        //         "C:/Users/maldimeriggio/Desktop/BackMeUp/bin/backup_program.exe",
-        //         "/ST",
-        //         "00:00", // Avvia subito
-        //         "/RU",
-        //         "SYSTEM",
-        //         "/F",
-        //     ])
-        //     .output();
-        //
-        // match output {
-        //     Ok(output) => {
-        //         log_message(&format!(
-        //             // "Creazione attività schtasks eseguita con successo. Output: {} \n",
-        //             // String::from_utf8_lossy(&output.stdout)
-        //             "***CREAZIONE*** \nStdout: {}\nStderr: {} \n",
-        //             String::from_utf8_lossy(&output.stdout),
-        //             String::from_utf8_lossy(&output.stderr)
-        //         ));
-        //     }
-        //     Err(e) => {
-        //         log_message(&format!("Errore durante l'esecuzione di schtasks: {} \n", e));
-        //     }
-        // }
-        //
-        // output = Command::new("schtasks")
-        //     .args(["/Run", "/TN", "LaunchBackupProgram"])
-        //     .output();
-        //
-        // match output {
-        //     Ok(output) => {
-        //         log_message(&format!(
-        //             // "Lancio schtasks eseguito con successo. Output: {} \n",
-        //             // String::from_utf8_lossy(&output.stdout)
-        //             "***lancio*** \nStdout: {}\nStderr: {}",
-        //             String::from_utf8_lossy(&output.stdout),
-        //             String::from_utf8_lossy(&output.stderr)
-        //         ));
-        //     }
-        //     Err(e) => {
-        //         log_message(&format!("Errore durante l'esecuzione di schtasks: {} \n", e));
-        //     }
-        // }
 
         log_message("Iniziando launch_backup_program");
 
@@ -248,28 +195,6 @@ mod service {
             return Err(err);
         }
 
-        // Ottieni username corrente
-        // let output = Command::new("query")
-        //     .args(["session"])
-        //     .output()?;
-        //
-        // log_message(&format!("Output username status: {}\n", output.status));
-        //
-        // let sessions = String::from_utf8_lossy(&output.stdout);
-        //
-        // log_message(&format!("Sessions: {}", sessions));
-        //
-        // let active_session = sessions.lines()
-        //     .find(|line| line.contains("Active"))
-        //     .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No active session found"))?;
-        //
-        // log_message(&format!("Active session: {}", active_session));
-
-        // let username = active_session
-        //     .split_whitespace()
-        //     .nth(1)
-        //     .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidData, "Could not parse username"))?;
-
         let username = get_current_user().unwrap();
 
         log_message(&format!("Username trovato: {}", username));
@@ -280,16 +205,14 @@ mod service {
 
         log_message(&format!("Creazione del task per l'orario: {}", start_time_str));
 
-        // let command_str = format!(
-        //     "powershell.exe -WindowStyle Hidden -Command \"& '{}'\"",
-        //     backup_program_path.to_string_lossy()
-        // );
+        let task_name = "BackupProgramLauncher";
+        let xml_name = exe_dir.join("BackMeUp_task.xml");
 
         // Crea il task specificando l'utente e il flag IT per l'interattività
         let create_result = Command::new("schtasks")
             .args([
                 "/Create",
-                "/TN", "BackupProgramLauncher",
+                "/TN", task_name,
                 "/TR", &backup_program_path.to_string_lossy(),
                 "/SC", "ONCE",
                 "/ST", &start_time_str,
@@ -299,6 +222,46 @@ mod service {
                 "/RL", "HIGHEST"  // Esegui con i privilegi più alti
             ])
             .output()?;
+
+        // Modify task's XML to allow for execution on battery power
+
+        // Esegui il comando schtasks e cattura l'output XML
+        let output = Command::new("schtasks")
+            .args(["/Query", "/TN", task_name, "/XML"])
+            .output()?;
+
+
+        if !output.status.success() {
+            log_message("Errore nell'esecuzione di schtasks\n");
+            // eprintln!("Stderr: {}", String::from_utf8_lossy(&output.stderr));
+        }
+
+        let xml_content = String::from_utf8(output.stdout).unwrap();
+        log_message(&xml_content);
+
+        // Modifica l'XML in memoria
+        // let modified_xml = modify_task_xml(&xml_content)?;
+
+        let mut modified_xml = xml_content.replace("<DisallowStartIfOnBatteries>true</DisallowStartIfOnBatteries>", "<DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>");
+        modified_xml = modified_xml.replace("<StopIfGoingOnBatteries>true</StopIfGoingOnBatteries>", "<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>");
+
+        log_message("XML modificato:\n");
+
+        // Save the modified xml
+        std::fs::write(xml_name.clone(), &modified_xml)?;
+
+        // Use it to create the task
+        let output = Command::new("schtasks")
+            .args([
+                "/Create",
+                "/TN",
+                task_name,
+                "/XML",
+                xml_name.display().to_string().as_str(),
+                "/F", // Forza la sovrascrittura se il task esiste già
+            ])
+            .output()?;
+
 
         log_message(&format!(
             "Risultato creazione task:\nStatus: {}\nStdout: {}\nStderr: {}",
@@ -373,29 +336,38 @@ mod service {
         }
     }
 
-    // fn get_current_user() -> Option<String> {
-    //     // Esegui il comando `whoami`
-    //     let output = Command::new("whoami").output().ok()?;
-    //     if output.status.success() {
-    //         // Converti l'output in una stringa e rimuovi spazi inutili
-    //         let full_output = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    //         log_message(&format!("Output whoami: {}", full_output));
-    //         // Dividi il nome completo usando '\' come separatore e prendi l'ultima parte
-    //         return full_output.split('\\').last().map(|s| s.to_string());
+    // fn modify_task_xml(input: &str) -> Result<String, Box<dyn Error>> {
+    //     let mut reader = Reader::from_str(input);
+    //     reader.trim_text(true);
+    //
+    //     let mut writer = Writer::new(Cursor::new(Vec::new()));
+    //     let mut buf = Vec::new();
+    //
+    //     while let Ok(event) = reader.read_event(&mut buf) {
+    //         match event {
+    //             Event::Start(ref e) if e.name() == b"DisallowStartIfOnBatteries" => {
+    //                 let mut elem = BytesStart::borrowed_name(e.name());
+    //                 writer.write_event(Event::Start(elem))?;
+    //                 writer.write_event(Event::Text(b"false".as_ref()))?;
+    //                 writer.write_event(Event::End(BytesEnd::borrowed(e.name())))?;
+    //             }
+    //             Event::Start(ref e) if e.name() == b"StopIfGoingOnBatteries" => {
+    //                 let mut elem = BytesStart::borrowed_name(e.name());
+    //                 writer.write_event(Event::Start(elem))?;
+    //                 writer.write_event(Event::Text(b"false".as_ref()))?;
+    //                 writer.write_event(Event::End(BytesEnd::borrowed(e.name())))?;
+    //             }
+    //             _ => writer.write_event(event)?, // Copia tutto il resto senza modifiche
+    //         }
+    //         buf.clear();
     //     }
-    //     None
+    //
+    //     let modified_xml = String::from_utf8(writer.into_inner().into_inner())
+    //         .map_err(|e| Box::new(e) as Box<dyn Error>)?;
+    //
+    //     Ok(modified_xml)
     // }
 
-    // fn get_current_user() -> Option<String> {
-    //     if let Ok(userprofile) = env::var("USERPROFILE") {
-    //         Path::new(&userprofile)
-    //             .file_name() // Estrae l'ultima parte del percorso
-    //             .and_then(|os_str| os_str.to_str()) // Converte in stringa
-    //             .map(|s| s.to_string())
-    //     } else {
-    //         None
-    //     }
-    // }
 
     fn get_current_user() -> Option<String> {
         unsafe {

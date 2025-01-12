@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 mod display_window;
 
 use std::env;
