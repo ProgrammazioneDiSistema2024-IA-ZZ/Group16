@@ -11,7 +11,13 @@ fn main() -> windows_service::Result<()> {
 #[cfg(target_os = "windows")]
 mod service {
     use std::{env, ffi::OsString, sync::mpsc, time::Duration};
-    use std::{path::PathBuf, fs::File, fs::OpenOptions, io::Write};
+    use std::{path::PathBuf, fs::File, fs::OpenOptions, io::Write, path::Path};
+    use windows_sys::Win32::System::RemoteDesktop::{
+        WTSEnumerateSessionsW, WTSQuerySessionInformationW, WTS_CURRENT_SERVER_HANDLE,
+        WTS_INFO_CLASS, WTS_CONNECTSTATE_CLASS, WTSActive, WTSUserName, WTSFreeMemory, WTS_SESSION_INFOW
+    };
+    use windows_sys::core::PWSTR;
+    use std::os::windows::ffi::OsStringExt;
     use windows_service::{
         define_windows_service,
         service::{
@@ -21,7 +27,7 @@ mod service {
         service_control_handler::{self, ServiceControlHandlerResult},
         service_dispatcher, Result,
     };
-    use std::{process, thread};
+    use std::{process, thread, ptr};
     use std::panic::catch_unwind;
     use std::process::Command;
     use egui::accesskit::DefaultActionVerb::Open;
@@ -243,19 +249,28 @@ mod service {
         }
 
         // Ottieni username corrente
-        let output = Command::new("query")
-            .args(["session"])
-            .output()?;
+        // let output = Command::new("query")
+        //     .args(["session"])
+        //     .output()?;
+        //
+        // log_message(&format!("Output username status: {}\n", output.status));
+        //
+        // let sessions = String::from_utf8_lossy(&output.stdout);
+        //
+        // log_message(&format!("Sessions: {}", sessions));
+        //
+        // let active_session = sessions.lines()
+        //     .find(|line| line.contains("Active"))
+        //     .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No active session found"))?;
+        //
+        // log_message(&format!("Active session: {}", active_session));
 
-        let sessions = String::from_utf8_lossy(&output.stdout);
-        let active_session = sessions.lines()
-            .find(|line| line.contains("Active"))
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::NotFound, "No active session found"))?;
+        // let username = active_session
+        //     .split_whitespace()
+        //     .nth(1)
+        //     .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidData, "Could not parse username"))?;
 
-        let username = active_session
-            .split_whitespace()
-            .nth(1)
-            .ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidData, "Could not parse username"))?;
+        let username = get_current_user().unwrap();
 
         log_message(&format!("Username trovato: {}", username));
 
@@ -265,6 +280,11 @@ mod service {
 
         log_message(&format!("Creazione del task per l'orario: {}", start_time_str));
 
+        // let command_str = format!(
+        //     "powershell.exe -WindowStyle Hidden -Command \"& '{}'\"",
+        //     backup_program_path.to_string_lossy()
+        // );
+
         // Crea il task specificando l'utente e il flag IT per l'interattività
         let create_result = Command::new("schtasks")
             .args([
@@ -273,7 +293,7 @@ mod service {
                 "/TR", &backup_program_path.to_string_lossy(),
                 "/SC", "ONCE",
                 "/ST", &start_time_str,
-                "/RU", username,    // Specifica l'utente
+                "/RU", &username,    // Specifica l'utente
                 "/IT",             // Permetti l'interazione con il desktop
                 "/F",             // Forza la sovrascrittura
                 "/RL", "HIGHEST"  // Esegui con i privilegi più alti
@@ -351,6 +371,97 @@ mod service {
                 eprintln!("Failed to write to log file: {}", e);
             }
         }
+    }
+
+    // fn get_current_user() -> Option<String> {
+    //     // Esegui il comando `whoami`
+    //     let output = Command::new("whoami").output().ok()?;
+    //     if output.status.success() {
+    //         // Converti l'output in una stringa e rimuovi spazi inutili
+    //         let full_output = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    //         log_message(&format!("Output whoami: {}", full_output));
+    //         // Dividi il nome completo usando '\' come separatore e prendi l'ultima parte
+    //         return full_output.split('\\').last().map(|s| s.to_string());
+    //     }
+    //     None
+    // }
+
+    // fn get_current_user() -> Option<String> {
+    //     if let Ok(userprofile) = env::var("USERPROFILE") {
+    //         Path::new(&userprofile)
+    //             .file_name() // Estrae l'ultima parte del percorso
+    //             .and_then(|os_str| os_str.to_str()) // Converte in stringa
+    //             .map(|s| s.to_string())
+    //     } else {
+    //         None
+    //     }
+    // }
+
+    fn get_current_user() -> Option<String> {
+        unsafe {
+            let mut session_info_ptr: *mut WTS_SESSION_INFOW = ptr::null_mut();
+            let mut session_count: u32 = 0;
+
+            // Enumerate all sessions
+            if WTSEnumerateSessionsW(
+                WTS_CURRENT_SERVER_HANDLE,
+                0,
+                1,
+                &mut session_info_ptr,
+                &mut session_count,
+            ) == 0
+            {
+                return None; // Failed to enumerate sessions
+            }
+
+            // Interpret the session info as a slice of WTS_SESSION_INFO structures
+            let session_info_size = std::mem::size_of::<WTS_SESSION_INFO>();
+            let session_info_slice = std::slice::from_raw_parts(
+                session_info_ptr as *const WTS_SESSION_INFO,
+                session_count as usize,
+            );
+
+            for session_info in session_info_slice {
+                if session_info.State == WTSActive {
+                    let mut user_ptr: PWSTR = ptr::null_mut();
+                    let mut bytes_returned: u32 = 0;
+
+                    // Query the username for the active session
+                    if WTSQuerySessionInformationW(
+                        WTS_CURRENT_SERVER_HANDLE,
+                        session_info.SessionId,
+                        WTSUserName,
+                        &mut user_ptr,
+                        &mut bytes_returned,
+                    ) != 0
+                    {
+                        let username = to_string(user_ptr);
+                        WTSFreeMemory(user_ptr as *mut _); // Free memory allocated by WTS
+                        WTSFreeMemory(session_info_ptr as *mut _); // Free memory allocated by WTS
+                        return Some(username);
+                    }
+                }
+            }
+
+            WTSFreeMemory(session_info_ptr as *mut _); // Free memory allocated by WTS
+            None
+        }
+    }
+
+    #[repr(C)]
+    struct WTS_SESSION_INFO {
+        SessionId: u32,
+        pWinStationName: PWSTR,
+        State: WTS_CONNECTSTATE_CLASS,
+    }
+
+    unsafe fn to_string(pwstr: PWSTR) -> String {
+        if pwstr.is_null() {
+            return String::new();
+        }
+        let len = (0..).take_while(|&i| *pwstr.offset(i) != 0).count();
+        let slice = std::slice::from_raw_parts(pwstr, len);
+        OsString::from_wide(slice).to_string_lossy().into_owned()
     }
 }
 
