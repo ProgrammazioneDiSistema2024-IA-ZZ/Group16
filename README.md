@@ -4,7 +4,7 @@
 1. Aprire un terminale (con permessi di amministratore se su Windows).
 2. Lanciare lo script di setup con il comando `./setup_macos_linux.sh` su MacOs/Linux oppure `./setup_windows.bat` su Windows.
 
-Su MacOs assicurarsi che gli backup_program abbia i permessi di Input Monitoring.
+Su MacOs assicurarsi che backup_program abbia i permessi di Input Monitoring.
 
 ## Configurazione del Backup
 All'avvio del programma, sarà necessario configurare i seguenti parametri:
