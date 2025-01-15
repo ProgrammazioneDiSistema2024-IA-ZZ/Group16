@@ -45,25 +45,26 @@ fn main() -> windows_service::Result<()> {
 fn is_service_installed(service_name: &str) -> Result<bool, Box<dyn Error>> {
     #[cfg(target_os = "macos")]
     {
-        // Controlla se il servizio è installato su macOS
+        // Check if the service is installed on macOS
         let output = Command::new("launchctl")
             .arg("list")
             .output()?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-        // Verifica se il nome del servizio è presente nell'output
+
+        // Check if the service name is present in the output
         Ok(stdout.contains(service_name))
     }
 
     #[cfg(target_os = "linux")]
     {
-        // Controlla se il servizio è installato su Linux
+        // Check if the service is installed on Linux
         let output = Command::new("systemctl")
             .arg("is-active")
             .arg(service_name)
             .output()?;
 
-        // Se il codice di uscita è 0, il servizio esiste
+        // If the exit code is 0, the service exists
         Ok(output.status.success())
     }
 }
@@ -88,10 +89,10 @@ fn main() -> io::Result<()> {
                 println!("Service already installed and running");
             } else {
                 println!("Service not installed, starting installation..");
+
                 // Install our service using the underlying service management platform
                 manager.install(ServiceInstallCtx {
                     label: label.clone(),
-                    // program: PathBuf::from(env::current_exe().unwrap().join("/Group16")),
                     program: PathBuf::from(env::current_exe().unwrap().parent().unwrap().join("backup_program")),
                     args: vec![OsString::from("--service")],
                     contents: None, // Optional String for system-specific service content.

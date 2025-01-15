@@ -200,7 +200,7 @@ mod service {
         log_message(&format!("Username trovato: {}", username));
 
         // Calcola l'orario di esecuzione un minuto nel futuro
-        let start_time = Local::now() + chrono::Duration::minutes(1);
+        let start_time = Local::now() + chrono::Duration::minutes(1);   // ToDo: see if this can be changed to instantly
         let start_time_str = start_time.format("%H:%M").to_string();
 
         log_message(&format!("Creazione del task per l'orario: {}", start_time_str));
@@ -208,7 +208,7 @@ mod service {
         let task_name = "BackupProgramLauncher";
         let xml_name = exe_dir.join("BackMeUp_task.xml");
 
-        // Crea il task specificando l'utente e il flag IT per l'interattività
+        // Create the task specifying the user and the IT flag for interactivity
         let create_result = Command::new("schtasks")
             .args([
                 "/Create",
@@ -225,29 +225,25 @@ mod service {
 
         // Modify task's XML to allow for execution on battery power
 
-        // Esegui il comando schtasks e cattura l'output XML
+        // Execute the schtasks command and capture the XML output
         let output = Command::new("schtasks")
             .args(["/Query", "/TN", task_name, "/XML"])
             .output()?;
 
-
         if !output.status.success() {
             log_message("Errore nell'esecuzione di schtasks\n");
-            // eprintln!("Stderr: {}", String::from_utf8_lossy(&output.stderr));
         }
 
         let xml_content = String::from_utf8(output.stdout).unwrap();
         log_message(&xml_content);
 
-        // Modifica l'XML in memoria
-        // let modified_xml = modify_task_xml(&xml_content)?;
-
+        // Modify the XML in memory
         let mut modified_xml = xml_content.replace("<DisallowStartIfOnBatteries>true</DisallowStartIfOnBatteries>", "<DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>");
         modified_xml = modified_xml.replace("<StopIfGoingOnBatteries>true</StopIfGoingOnBatteries>", "<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>");
 
         log_message("XML modificato:\n");
 
-        // Save the modified xml
+        // Save the modified XML
         std::fs::write(xml_name.clone(), &modified_xml)?;
 
         // Use it to create the task
@@ -258,7 +254,7 @@ mod service {
                 task_name,
                 "/XML",
                 xml_name.display().to_string().as_str(),
-                "/F", // Forza la sovrascrittura se il task esiste già
+                "/F",                   // Force overwrite if task already exists
             ])
             .output()?;
 
@@ -278,7 +274,7 @@ mod service {
             ));
         }
 
-        // Avvia il task immediatamente
+        // Start the task
         log_message("Avvio del task...");
         let run_result = Command::new("schtasks")
             .args([
@@ -335,39 +331,6 @@ mod service {
             }
         }
     }
-
-    // fn modify_task_xml(input: &str) -> Result<String, Box<dyn Error>> {
-    //     let mut reader = Reader::from_str(input);
-    //     reader.trim_text(true);
-    //
-    //     let mut writer = Writer::new(Cursor::new(Vec::new()));
-    //     let mut buf = Vec::new();
-    //
-    //     while let Ok(event) = reader.read_event(&mut buf) {
-    //         match event {
-    //             Event::Start(ref e) if e.name() == b"DisallowStartIfOnBatteries" => {
-    //                 let mut elem = BytesStart::borrowed_name(e.name());
-    //                 writer.write_event(Event::Start(elem))?;
-    //                 writer.write_event(Event::Text(b"false".as_ref()))?;
-    //                 writer.write_event(Event::End(BytesEnd::borrowed(e.name())))?;
-    //             }
-    //             Event::Start(ref e) if e.name() == b"StopIfGoingOnBatteries" => {
-    //                 let mut elem = BytesStart::borrowed_name(e.name());
-    //                 writer.write_event(Event::Start(elem))?;
-    //                 writer.write_event(Event::Text(b"false".as_ref()))?;
-    //                 writer.write_event(Event::End(BytesEnd::borrowed(e.name())))?;
-    //             }
-    //             _ => writer.write_event(event)?, // Copia tutto il resto senza modifiche
-    //         }
-    //         buf.clear();
-    //     }
-    //
-    //     let modified_xml = String::from_utf8(writer.into_inner().into_inner())
-    //         .map_err(|e| Box::new(e) as Box<dyn Error>)?;
-    //
-    //     Ok(modified_xml)
-    // }
-
 
     fn get_current_user() -> Option<String> {
         unsafe {
