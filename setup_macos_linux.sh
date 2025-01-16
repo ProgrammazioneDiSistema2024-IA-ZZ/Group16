@@ -35,7 +35,8 @@ cp "$ASSETS_DIR/blip-131856.mp3" "$BASE_DIR/Resources/audio/"
 
 # Esecuzione di cargo build
 echo "Compilazione del progetto Rust..."
-cd "$BASE_DIR/../"
+cd "$BASE_DIR"
+cd ..
 cargo build
 
 # Verifica della compilazione e copia degli eseguibili

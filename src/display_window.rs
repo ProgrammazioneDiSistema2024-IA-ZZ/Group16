@@ -45,9 +45,26 @@ impl ConfigWindow {
 
     // Metodo per selezionare una directory tramite un file dialog
     fn select_directory() -> Option<String> {
-        FileDialog::new()
-            .pick_folder()  // Apre il dialogo per selezionare una cartella
-            .map(|path| path.display().to_string())  // Converte il percorso selezionato in stringa
+        #[cfg(not(target_os = "linux"))]
+        {
+            FileDialog::new()
+                .pick_folder()  // Apre il dialogo per selezionare una cartella
+                .map(|path| path.display().to_string())  // Converte il percorso selezionato in stringa
+        }
+        #[cfg(target_os = "linux")]
+        {
+            let output = Command::new("zenity")
+                .arg("--file-selection")
+                .arg("--directory")
+                .output()
+                .ok()?;
+
+            if output.status.success() {
+                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+            } else {
+                None
+            }
+        }
     }
 }
 

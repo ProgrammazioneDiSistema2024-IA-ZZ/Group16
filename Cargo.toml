@@ -30,7 +30,7 @@ default = []
 sysinfo = "0.31.4"
 log = "0.4.14"
 chrono = "0.4.19"
-inputbot = "0.3"
+
 rdev = "0.5"
 rodio = "0.19.0"
 eframe = "0.29.0"

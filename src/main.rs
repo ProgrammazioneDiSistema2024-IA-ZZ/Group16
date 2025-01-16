@@ -45,14 +45,13 @@ fn main() -> windows_service::Result<()> {
 fn is_service_installed(service_name: &str) -> Result<bool, Box<dyn Error>> {
     #[cfg(target_os = "macos")]
     {
-        // Check if the service is installed on macOS
+        // Controlla se il servizio è installato su macOS
         let output = Command::new("launchctl")
             .arg("list")
             .output()?;
 
         let stdout = String::from_utf8_lossy(&output.stdout);
-
-        // Check if the service name is present in the output
+        // Verifica se il nome del servizio è presente nell'output
         Ok(stdout.contains(service_name))
     }
 
@@ -60,19 +59,32 @@ fn is_service_installed(service_name: &str) -> Result<bool, Box<dyn Error>> {
     {
         // Check if the service is installed on Linux
         let output = Command::new("systemctl")
-            .arg("is-active")
-            .arg(service_name)
+            .arg("list-units")
+            .arg("--user")
+            .arg("--type=service")
+            .arg("--all")
             .output()?;
 
-        // If the exit code is 0, the service exists
-        Ok(output.status.success())
+        let stdout = String::from_utf8_lossy(&output.stdout);
+
+        // Check if the service name is present in the output
+        Ok(stdout.contains(service_name))
     }
 }
 
 #[cfg(not(target_os = "windows"))]
 fn main() -> io::Result<()> {
+
     // Create a label for our service
-    let label: ServiceLabel = "com.backmeup".parse().unwrap();
+    let label: ServiceLabel = "backmeup".parse().unwrap();
+    let mut env_vars: Option<Vec<(String, String)>> = None;
+
+    #[cfg(target_os = "linux")]
+    {
+        // Set the DISPLAY environment variable for the service to allow GUI applications
+        env_vars = Some(vec![("DISPLAY".to_string(), ":0".to_string())]);
+    }
+
 
     // Get generic service by detecting what is available on the platform
     let mut manager = <dyn ServiceManager>::native()
@@ -83,24 +95,40 @@ fn main() -> io::Result<()> {
         .expect("Service manager does not support user-level services");
 
 
-    match is_service_installed("com.backmeup") {
+    match is_service_installed("backmeup") {
         Ok(installed) => {
             if installed {
                 println!("Service already installed and running");
             } else {
                 println!("Service not installed, starting installation..");
-
                 // Install our service using the underlying service management platform
-                manager.install(ServiceInstallCtx {
+                let result = manager.install(ServiceInstallCtx {
                     label: label.clone(),
                     program: PathBuf::from(env::current_exe().unwrap().parent().unwrap().join("backup_program")),
-                    args: vec![OsString::from("--service")],
+                    args: vec![], // Optional Vec<String> of arguments to pass to the service.
                     contents: None, // Optional String for system-specific service content.
                     username: None, // Optional String for alternative user to run service.
                     working_directory: None, // Optional String for the working directory for the service process.
-                    environment: None, // Optional list of environment variables to supply the service process.
+                    environment: env_vars, // Optional list of environment variables to supply the service process.
                     autostart: true, // Specify whether the service should automatically start upon OS reboot.
-                }).expect("Failed to install");
+                });
+
+                match result {
+                    Ok(_) => {
+                        #[cfg(target_os = "linux")]
+                        {
+                            // Start our service using the underlying service management platform
+                            manager.start(ServiceStartCtx {
+                                label: label.clone()
+                            }).expect("Failed to start");
+                        }
+
+                        println!("Service installed successfully");
+                    }
+                    Err(e) => {
+                        eprintln!("Error during service installation: {}", e);
+                    }
+                }
 
             }
 
