@@ -1,8 +1,31 @@
 # Back-up di emergenza
 
+## Prerequisiti
+### MacOs
+Fornire a backup_program i permessi di Input Monitoring:
+
+1. Aprire `Preferenze di Sistema`.
+2. Selezionare `Sicurezza e Privacy`.
+3. Nella scheda `Privacy`, selezionare `Input Monitoring`.
+4. Aggiungere `backup_program` alla lista delle applicazioni autorizzate.
+
+### Linux
+É necessario che `zenity` sia installato per il corretto funzionamento del programma.
+Le seguenti librerie sono necessarie per il corretto funzionamento del programma:
+- `libasound2-dev`
+- `libx11-dev`
+- `libxi-dev`
+- `libxtst-dev`
+
 ## Avviare il Programma
-1. Aprire un terminale (con permessi di amministratore se su Windows).
-2. Lanciare lo script di setup con il comando `./setup_macos_linux.sh` su MacOs/Linux oppure `./setup_windows.bat` su Windows.
+### Windows
+1. Aprire `cmd` con permessi di amministratore.
+2. Lanciare lo script di setup con il comando `./setup_windows.bat`.
+
+### MacOs/Linux
+1. Aprire `Terminale`.
+2. Lanciare lo script di setup con il comando `./setup_macos_linux.sh`.
+
 
 Su MacOs assicurarsi che backup_program abbia i permessi di Input Monitoring.
 
