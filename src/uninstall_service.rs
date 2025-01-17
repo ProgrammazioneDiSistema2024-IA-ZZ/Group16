@@ -3,6 +3,7 @@ fn main() -> windows_service::Result<()> {
     use std::{
         thread::sleep,
         time::{Duration, Instant},
+        ffi::OsStr
     };
 
     use windows_service::{
@@ -10,6 +11,8 @@ fn main() -> windows_service::Result<()> {
         service_manager::{ServiceManager, ServiceManagerAccess},
     };
     use windows_sys::Win32::Foundation::ERROR_SERVICE_DOES_NOT_EXIST;
+    use sysinfo::System;
+    use std::process::Command;
 
     let manager_access = ServiceManagerAccess::CONNECT;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
@@ -38,12 +41,35 @@ fn main() -> windows_service::Result<()> {
         {
             if e.raw_os_error() == Some(ERROR_SERVICE_DOES_NOT_EXIST as i32) {
                 println!("BackMeUp is deleted.");
-                return Ok(());
+                break;
             }
         }
         sleep(Duration::from_secs(1));
     }
-    println!("BackMeUp is marked for deletion.");
+
+    // Delete the scheduled task
+    // First, end the task if it is running. This will also kill the backup_program process.
+    let _ = Command::new("schtasks")
+        .args(["/END", "/TN", "BackupProgramLauncher"])
+        .output();
+
+    // Then delete the task
+    let task_result = Command::new("schtasks")
+        .args(["/Delete", "/TN", "BackupProgramLauncher", "/F"])
+        .output();
+
+    match task_result {
+        Ok(output) => {
+            if output.status.success() {
+                println!("Task deleted successfully.");
+            } else {
+                eprintln!("Error during task deletion: {}", String::from_utf8_lossy(&output.stderr));
+            }
+        }
+        Err(e) => {
+            eprintln!("Error executing schtask command: {}", e);
+        }
+    }
 
     Ok(())
 }
