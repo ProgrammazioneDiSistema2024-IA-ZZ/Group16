@@ -2,7 +2,7 @@
 
 ## Prerequisiti
 ### MacOs
-Fornire a backup_program i permessi di Input Monitoring:
+Dopo aver eseguito lo script di setup, fornire a backup_program i permessi di Input Monitoring:
 
 1. Aprire `Preferenze di Sistema`.
 2. Selezionare `Sicurezza e Privacy`.
@@ -10,9 +10,13 @@ Fornire a backup_program i permessi di Input Monitoring:
 4. Aggiungere `backup_program` alla lista delle applicazioni autorizzate.
 
 ### Linux
-É necessario che `zenity` sia installato per il corretto funzionamento del programma.
-Le seguenti librerie sono necessarie per il corretto funzionamento del programma:
-- `libasound2-dev`
+É necessario che `zenity` sia installato per il corretto funzionamento del programma.  
+Sono necessarie le seguenti librerie per la corretta esecuzione del programma:
+- ALSA development files
+  - Ubuntu/Debian
+    - `libasound2-dev`
+  - Fedora
+    - `alsa-lib-devel`
 - `libx11-dev`
 - `libxi-dev`
 - `libxtst-dev`
@@ -25,9 +29,6 @@ Le seguenti librerie sono necessarie per il corretto funzionamento del programma
 ### MacOs/Linux
 1. Aprire `Terminale`.
 2. Lanciare lo script di setup con il comando `./setup_macos_linux.sh`.
-
-
-Su MacOs assicurarsi che backup_program abbia i permessi di Input Monitoring.
 
 ## Configurazione del Backup
 All'avvio del programma, sarà necessario configurare i seguenti parametri:
@@ -65,3 +66,6 @@ Dopo l'apparizione della finestra di conferma, è possibile:
 3. **Riconfigurare il Backup:**
     - Disegnare una diagonale **dall'angolo in basso a sinistra** verso l'**angolo in alto a destra**.
     - Non ci sarà un segnale acustico; al contrario, verrà mostrata nuovamente la finestra di configurazione iniziale.
+
+## Cleanup
+Per rimuovere il programma dal sistema, eseguire l'utility di cleanup `uninstall_service`.
