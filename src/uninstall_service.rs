@@ -1,3 +1,6 @@
+use std::io;
+use std::process::Command;
+
 #[cfg(windows)]
 fn main() -> windows_service::Result<()> {
     use std::{
@@ -12,7 +15,6 @@ fn main() -> windows_service::Result<()> {
     };
     use windows_sys::Win32::Foundation::ERROR_SERVICE_DOES_NOT_EXIST;
     use sysinfo::System;
-    use std::process::Command;
 
     let manager_access = ServiceManagerAccess::CONNECT;
     let service_manager = ServiceManager::local_computer(None::<&str>, manager_access)?;
@@ -74,7 +76,48 @@ fn main() -> windows_service::Result<()> {
     Ok(())
 }
 
-#[cfg(not(windows))]
-fn main() {
-    panic!("This program is only intended to run on Windows.");
+#[cfg(target_os = "macos")]
+fn main() -> io::Result<()> {
+    println!("Disabilitazione del servizio su macOS...");
+
+    let _ = Command::new("launchctl")
+        .args(["remove", "backmeup"])
+        .output();
+
+    let plist_path = format!("{}/Library/LaunchAgents/backmeup.plist", std::env::var("HOME").unwrap());
+    if let Err(e) = std::fs::remove_file(&plist_path) {
+        eprintln!("Errore durante l'eliminazione del file plist: {}", e);
+    } else {
+        println!("File plist eliminato con successo.");
+    }
+
+    Ok(())
+}
+
+#[cfg(target_os = "linux")]
+fn main() -> io::Result<()> {
+    println!("Disabilitazione del servizio su Linux...");
+
+    let _ = Command::new("systemctl")
+        .args(["--user", "stop", "backmeup.service"])
+        .output();
+
+    let _ = Command::new("systemctl")
+        .args(["--user", "disable", "backmeup.service"])
+        .output();
+
+    let service_path = format!("{}/.config/systemd/user/backmeup.service", std::env::var("HOME").unwrap());
+    if let Err(e) = std::fs::remove_file(&service_path) {
+        eprintln!("Errore durante l'eliminazione del file del servizio: {}", e);
+    } else {
+        println!("File del servizio eliminato con successo.");
+    }
+
+    let _ = Command::new("systemctl")
+        .args(["--user", "daemon-reload"])
+        .output();
+
+    println!("Servizio disabilitato ed eliminato con successo.");
+
+    Ok(())
 }
