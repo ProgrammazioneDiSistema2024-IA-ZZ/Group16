@@ -10,7 +10,7 @@ fn create_log_file() -> std::fs::File {
     OpenOptions::new()
         .create(true)
         .append(true)
-        .open(env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("cpu_log.txt"))
+        .open(env::current_exe().unwrap().parent().unwrap().parent().unwrap().join("Resources/cpu_log.txt"))
         .expect("Unable to create or open log file")
 }
 
