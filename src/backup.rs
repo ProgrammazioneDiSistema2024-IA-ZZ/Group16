@@ -44,9 +44,14 @@ impl From<FsExtraError> for BackupError {
 
 pub(crate) fn backup_files(config: &Config) -> Result<(), BackupError> {
     let source_path = Path::new(&config.source_path);
-    let destination_path = Path::new(&config.destination_path);
+    let mut destination_path = Path::new(&config.destination_path);
+
+    // Copy last folder name in source_path into destination_path
+    let source_folder_name = source_path.file_name().unwrap();
+    let destination_path = &*destination_path.join(source_folder_name);
 
     println!("Backup started from: {:?}", source_path);
+    println!("Backup towards folder: {:?}", destination_path);
 
     // Total size of files copied
     let mut total_size: u64 = 0;
