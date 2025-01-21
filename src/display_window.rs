@@ -3,9 +3,11 @@ use std::{env, fs};
 use std::path::{PathBuf};
 use std::io::Write;
 use std::sync::{Arc, Mutex};
-use eframe::Frame;
 use egui::{Align, Color32, Context, Layout, RichText, ViewportCommand, Window};
+use eframe::Frame;
 use rfd::FileDialog;
+use egui::{Margin, Rounding, Stroke, Vec2};
+use egui::Frame as EguiFrame;
 #[cfg(target_os = "linux")]
 use std::process::Command;
 
@@ -103,6 +105,7 @@ impl eframe::App for ConfigWindow {
         CentralPanel::default().show(ctx, |ui| {
             // Spaziatura e stile globali
             let spacing = ui.spacing_mut();
+            let field_width = 189.0; // Larghezza del campo di testo
             spacing.item_spacing = egui::Vec2::new(5.0, 7.0); // Spaziatura orizzontale e verticale
             spacing.text_edit_width = 300.0; // Larghezza del campo di testo
 
@@ -110,15 +113,22 @@ impl eframe::App for ConfigWindow {
 
             ui.label("Source Path:");
             ui.horizontal(|ui| {
-                // Campo per selezionare il percorso sorgente
-                // ui.text_edit_singleline(&mut self.source_path);
-                ui.label(
-                    if self.source_path.is_empty() {
-                        "Click to select a source path -->"
-                    } else {
-                        &self.source_path
-                    },
-                );
+                egui::Frame::none()
+                .stroke(Stroke::new(1.0, Color32::LIGHT_GRAY))
+                .rounding(Rounding::same(4.0))
+                .inner_margin(Margin::same(5.0))
+                .show(ui, |ui| {
+                    // Imposta la larghezza del layout
+                    ui.set_min_width(field_width);
+            
+                    ui.label(
+                        if self.source_path.is_empty() {
+                            "Select a source path -->"
+                        } else {
+                            &self.source_path
+                        },
+                    );
+                });
 
                 // Pulsante per aprire il file dialog
                 if ui.button("...").clicked() {
@@ -130,15 +140,22 @@ impl eframe::App for ConfigWindow {
 
             ui.label("Destination Path:");
             ui.horizontal(|ui| {
-                // Campo per selezionare il percorso destinazione
-                // ui.text_edit_singleline(&mut self.destination_path);
-                ui.label(
-                    if self.destination_path.is_empty() {
-                        "Click to select a destination path -->"
-                    } else {
-                        &self.destination_path
-                    },
-                );
+                egui::Frame::none()
+                .stroke(Stroke::new(1.0, Color32::LIGHT_GRAY))
+                .rounding(Rounding::same(4.0))
+                .inner_margin(Margin::same(5.0))
+                .show(ui, |ui| {
+                    // Imposta la stessa larghezza per il secondo campo
+                    ui.set_min_width(field_width);
+            
+                    ui.label(
+                        if self.destination_path.is_empty() {
+                            "Select a destination path -->"
+                        } else {
+                            &self.destination_path
+                        },
+                    );
+                });
 
                 // Pulsante per aprire il file dialog
                 if ui.button("...").clicked() {
@@ -209,8 +226,6 @@ impl eframe::App for ConfigWindow {
         });
     }
 }
-
-
 
 
 // Funzione per avviare la GUI solo se `config.toml` non esiste
