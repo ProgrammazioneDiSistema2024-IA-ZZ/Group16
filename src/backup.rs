@@ -1,11 +1,10 @@
 use std::{fs, io};
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use fs_extra::dir::CopyOptions;
-use fs_extra::dir;
-use fs_extra::file;
 use fs_extra::error::Error as FsExtraError;
+use walkdir::{WalkDir, DirEntry};
 
 #[derive(Debug, serde::Deserialize)]
 pub struct Config {
@@ -44,11 +43,12 @@ impl From<FsExtraError> for BackupError {
 
 pub(crate) fn backup_files(config: &Config) -> Result<(), BackupError> {
     let source_path = Path::new(&config.source_path);
-    let mut destination_path = Path::new(&config.destination_path);
+    let mut destination_path= PathBuf::from(&config.destination_path);
 
-    // Copy last folder name in source_path into destination_path
-    let source_folder_name = source_path.file_name().unwrap();
-    let destination_path = &*destination_path.join(source_folder_name);
+    // Controlla se source_path ha un file_name
+    if let Some(source_folder_name) = source_path.file_name() {
+        destination_path.push(source_folder_name);
+    }
 
     println!("Backup started from: {:?}", source_path);
     println!("Backup towards folder: {:?}", destination_path);
@@ -65,32 +65,28 @@ pub(crate) fn backup_files(config: &Config) -> Result<(), BackupError> {
 
     // Create destination directory if it doesn't exist
     if !destination_path.exists() {
-        fs::create_dir_all(destination_path)?;
-        println!("Created destination directory: {:?}", destination_path);
+        fs::create_dir_all(destination_path.as_path())?;
+        println!("Created destination directory: {:?}", destination_path.as_path());
     }
 
     let mut dir_options = CopyOptions::new();
     dir_options.overwrite = true;
 
-    let file_options = file::CopyOptions::new();
-
+    // Perform backup based on the backup type
     match config.backup_type.as_str() {
         "full-disk" | "directory" => {
-            // Calculate size of directory
-            total_size = calculate_directory_size(source_path)?;
-
-            // Copy directory recursively
-            copy_recursive(source_path, destination_path, None)?;
+            // Perform backup and calculate total size
+            total_size = backup_with_walkdir(source_path, destination_path.as_path(), None)?;
         },
         "selective" => {
-            // Copy files with specific extensions
-            total_size = copy_recursive(source_path, destination_path, Some(&config.extensions_to_backup))?;
+            // Copy files with specific extensions and calculate total size
+            total_size = backup_with_walkdir(source_path, destination_path.as_path(), Some(&config.extensions_to_backup))?;
         },
         _ => return Err(BackupError::InvalidBackupType),
     }
 
     let backup_time = start_time.elapsed();
-    backup_monitor(destination_path, total_size, backup_time);
+    backup_monitor(destination_path.as_path(), total_size, backup_time);
     Ok(())
 }
 
@@ -154,71 +150,104 @@ fn backup_monitor(destination_path: &Path, total_size: u64, backup_time: Duratio
     writeln!(file, "Backup completed in: {:.2} seconds", backup_time.as_secs_f64()).unwrap();
 }
 
-fn copy_recursive<P: AsRef<Path>, Q: AsRef<Path>>(
-    from: P,
-    to: Q,
+fn backup_with_walkdir<P: AsRef<Path>, Q: AsRef<Path>>(
+    source: P,
+    destination: Q,
     extensions_to_backup: Option<&Vec<String>>,
 ) -> io::Result<u64> {
-    let from = from.as_ref();
-    let to = to.as_ref();
+    let source = source.as_ref();
+    let destination = destination.as_ref();
 
-    if !from.exists() {
+    if !source.exists() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
-            format!("Percorso non trovato: {}", from.display()),
+            format!("Percorso non trovato: {}", source.display()),
         ));
     }
 
-    if !from.is_dir() {
+    if !source.is_dir() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            format!("Il percorso non è una directory: {}", from.display()),
+            format!("Il percorso non è una directory: {}", source.display()),
         ));
+    }
+
+    // Crea la directory di destinazione
+    if let Err(e) = fs::create_dir_all(destination) {
+        eprintln!(
+            "Errore durante la creazione della directory {}: {}. Ignorata.",
+            destination.display(),
+            e
+        );
     }
 
     let mut total_size = 0;
 
-    for entry in fs::read_dir(from)? {
+    for entry in WalkDir::new(source)
+        .into_iter()
+        .filter_entry(|e| !is_hidden(e))            // Ignore hidden files
+    {
         let entry = match entry {
             Ok(e) => e,
             Err(e) => {
-                eprintln!("Errore durante l'accesso a un elemento in {}: {}. Ignorato.", from.display(), e);
+                eprintln!("Errore durante l'accesso a un elemento: {}. Ignorato.", e);
                 continue;
             }
         };
 
         let entry_path = entry.path();
-        let dest_path = to.join(entry.file_name());
-
-        if entry_path.is_dir() {
-            // Crea la directory di destinazione e copia ricorsivamente
-            if let Err(e) = fs::create_dir_all(&dest_path) {
-                eprintln!("Errore durante la creazione della directory {}: {}. Ignorata.", dest_path.display(), e);
+        let relative_path = match entry_path.strip_prefix(source) {
+            Ok(rel) => rel,
+            Err(_) => {
+                eprintln!(
+                    "Errore nel calcolo del percorso relativo per: {}. Ignorato.",
+                    entry_path.display()
+                );
                 continue;
             }
-            match copy_recursive(&entry_path, &dest_path, extensions_to_backup) {
-                Ok(size) => total_size += size,
-                Err(e) => eprintln!("Errore durante la copia della directory {}: {}. Ignorata.", entry_path.display(), e),
+        };
+
+        let dest_path = destination.join(relative_path);
+
+        if entry.file_type().is_dir() {
+            // Crea la directory di destinazione
+            if let Err(e) = fs::create_dir_all(&dest_path) {
+                eprintln!(
+                    "Errore durante la creazione della directory {}: {}. Ignorata.",
+                    dest_path.display(),
+                    e
+                );
             }
-        } else if entry_path.is_file() {
+        } else if entry.file_type().is_file() {
             // Se ci sono estensioni specificate, copia solo i file con le estensioni corrispondenti
             if let Some(extensions) = extensions_to_backup {
                 if let Some(extension) = entry_path.extension() {
                     if !extensions.contains(&extension.to_string_lossy().to_string()) {
-                        continue; // Salta i file che non corrispondono
+                        continue; // Skip files that don't match with the extensions selected
                     }
                 } else {
-                    continue; // Salta i file senza estensione
+                    continue; // Skip files without an extension
                 }
             }
 
-            // Copia il file e aggiungi la dimensione al totale
+            // Copia il file
             match fs::copy(&entry_path, &dest_path) {
                 Ok(size) => total_size += size,
-                Err(e) => eprintln!("Errore durante la copia del file {}: {}. Ignorato.", entry_path.display(), e),
+                Err(e) => eprintln!(
+                    "Errore durante la copia del file {}: {}. Ignorato.",
+                    entry_path.display(),
+                    e
+                ),
             }
         }
     }
 
     Ok(total_size)
+}
+
+fn is_hidden(entry: &DirEntry) -> bool {
+    entry.file_name()
+        .to_str()
+        .map(|s| s.starts_with("."))
+        .unwrap_or(false)
 }
