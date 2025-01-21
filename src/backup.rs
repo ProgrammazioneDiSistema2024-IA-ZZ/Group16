@@ -90,54 +90,6 @@ pub(crate) fn backup_files(config: &Config) -> Result<(), BackupError> {
     Ok(())
 }
 
-fn calculate_directory_size(path: &Path) -> Result<u64, BackupError> {
-    let mut total_size: u64 = 0;
-
-    println!("Inizio elaborazione: {}", path.display());
-
-    let entries = match fs::read_dir(path) {
-        Ok(entries) => entries,
-        Err(e) => {
-            eprintln!("Errore nell'accesso alla directory {}: {}. Ignorata.", path.display(), e);
-            return Ok(0); // Restituisci una dimensione di 0 per directory non accessibili
-        }
-    };
-
-    for entry in entries {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(e) => {
-                eprintln!("Errore nell'elaborazione di un elemento in {}: {}. Ignorato.", path.display(), e);
-                continue; // Salta l'elemento e passa al successivo
-            }
-        };
-
-        println!("Elaborando: {:?}", entry.path());
-
-        let metadata = match entry.metadata() {
-            Ok(m) => m,
-            Err(e) => {
-                eprintln!("Errore nel leggere i metadata di {:?}: {}. Ignorato.", entry.path(), e);
-                continue; // Salta l'elemento e passa al successivo
-            }
-        };
-
-        if metadata.is_file() {
-            total_size += metadata.len();
-        } else if metadata.is_dir() {
-            match calculate_directory_size(&entry.path()) {
-                Ok(size) => total_size += size,
-                Err(e) => {
-                    eprintln!("Errore nella calcolazione della dimensione di {}: {:?}. Ignorato.", entry.path().display(), e);
-                    continue; // Ignora la directory annidata e continua
-                }
-            }
-        }
-    }
-
-    Ok(total_size)
-}
-
 fn backup_monitor(destination_path: &Path, total_size: u64, backup_time: Duration) {
     let log_path = destination_path.join("backup_log.txt");
     let mut file = fs::OpenOptions::new()
