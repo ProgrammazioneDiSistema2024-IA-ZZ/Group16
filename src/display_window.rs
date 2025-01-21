@@ -28,6 +28,14 @@ struct ConfigWindow {
 }
 
 impl ConfigWindow {
+    fn new(config_file_path: PathBuf) -> Self {
+        let mut window = Self::default();
+        if config_file_path.join("config.toml").exists() {
+            window.read_config(config_file_path);
+        }
+        window
+    }
+
     // Metodo per salvare il file di configurazione
     fn save_config(&self, config_file_path: PathBuf) {
         println!("{:?}", self.backup_type);
@@ -86,9 +94,11 @@ impl eframe::App for ConfigWindow {
         let config_file_path = exe_path.parent().unwrap().join("Resources/");
 
         // Check if config.toml exists
-        if config_file_path.join("config.toml").exists() {
-            self.read_config(config_file_path.clone());
-        }
+        // if config_file_path.join("config.toml").exists() {
+        //     self.read_config(config_file_path.clone());
+        //     // Delete the config file
+        //     fs::remove_file(config_file_path.join("config.toml")).unwrap();
+        // }
 
         // Variabile per tracciare gli errori
         let mut error_message = String::new();
@@ -107,6 +117,7 @@ impl eframe::App for ConfigWindow {
             spacing.text_edit_width = 300.0; // Larghezza del campo di testo
 
             ui.heading("Backup Configuration");
+            ui.add_space(10.0);
 
             ui.label("Source Path:");
             ui.horizontal(|ui| {
@@ -120,6 +131,7 @@ impl eframe::App for ConfigWindow {
                     }
                 }
             });
+            ui.add_space(5.0);
 
             ui.label("Destination Path:");
             ui.horizontal(|ui| {
@@ -133,6 +145,7 @@ impl eframe::App for ConfigWindow {
                     }
                 }
             });
+            ui.add_space(5.0);
 
             // ComboBox per scegliere il tipo di backup
             ui.label("Backup Type:");
@@ -165,19 +178,27 @@ impl eframe::App for ConfigWindow {
                 error_message.push_str("Source and destination paths cannot be the same.\n");
             }
 
+
+            ui.add_space(10.0);
+
             // Mostra il pulsante di salvataggio con un messaggio di errore, se necessario
             ui.with_layout(Layout::top_down(Align::Center), |ui| {
                 // Colore del pulsante
                 let save_button_color = if is_valid {
-                    Color32::from_rgb(100, 250, 100) // Verde se valido
+                    Color32::from_rgb(51, 204, 51) // Verde se valido
                 } else {
                     Color32::from_rgb(200, 100, 100) // Rosso se non valido
                 };
 
+                // Testo in grassetto per il pulsante
+                let button_text = RichText::new("Save and Exit")
+                    .strong() // Grassetto
+                    .size(15.0); // Dimensione del testo più grande
+
                 // Mostra il pulsante e disabilitalo se non valido
-                let save_button = ui.add_enabled(
-                    is_valid,
-                    egui::Button::new("Save and Exit").fill(save_button_color),
+                let save_button = ui.add_sized(
+                    [120.0, 30.0], // Dimensione del pulsante (larghezza, altezza)
+                    egui::Button::new(button_text).fill(save_button_color),
                 );
 
                 // Salva e chiudi solo se il pulsante è cliccato ed è valido
@@ -211,9 +232,9 @@ pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
         ..Default::default()
     };
     eframe::run_native(
-        "BackupMeUp Configuration",
+        "BackMeUp",
         options,
-        Box::new(|_cc| Ok(Box::new(ConfigWindow::default()))),
+        Box::new(|_cc| Ok(Box::new(ConfigWindow::new(config_file_path)))),
     )
 }
 
@@ -226,20 +247,24 @@ struct BackupWindow{
 
 impl eframe::App for BackupWindow {
     fn update(&mut self, ctx: &Context, frame: &mut Frame) {
-
         // Aggiungiamo un pop-up al centro dello schermo
         CentralPanel::default().show(ctx, |ui| {
-                    ui.vertical_centered(|ui| {
-                        // Titolo del pop-up
-                        ui.heading("Do you want to proceed with backup?");
-                        ui.add_space(10.0);
-                        // Legenda con le istruzioni
-                        ui.label("1. Scorri verso destra per eseguire il backup").highlight();
-                        ui.label("2. Scorri verso l'alto per annullare il backup").highlight();
-                        ui.label("3. Scorri in diagonale nel lato opposto per riconfigurare il backup").highlight();
-                    });
-                });
+            ui.vertical_centered(|ui| {
+                // Titolo del pop-up con testo più grande
+                ui.heading(
+                    RichText::new("Do you want to proceed with backup?")
+                        .strong(),  // Grassetto per maggiore enfasi
+                );
+                ui.add_space(15.0); // Spaziatura più grande sotto il titolo
 
+                // Legenda con testo più grande e distanziato
+                ui.label(RichText::new("1. Slide from bottom-left corner to bottom-right corner to confirm.").size(13.0));
+                ui.add_space(10.0); // Spazio tra le righe
+                ui.label(RichText::new("2. Slide from bottom-left corner to top-left corner to abort.").size(13.0));
+                ui.add_space(10.0); // Spazio tra le righe
+                ui.label(RichText::new("3. Slide from bottom-left corner to top-right corner to change config.").size(13.0));
+            });
+        });
     }
 }
 
@@ -247,7 +272,7 @@ impl eframe::App for BackupWindow {
 pub fn show_backup_gui() -> Result<(), eframe::Error> {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_always_on_top()
-            .with_inner_size([500f32, 250f32])
+            .with_inner_size([450f32, 150f32])
             .with_decorations(true)
             .with_drag_and_drop(true),
         centered: true,
@@ -256,7 +281,7 @@ pub fn show_backup_gui() -> Result<(), eframe::Error> {
 
     // Avvia l'interfaccia grafica con la finestra di backup
     eframe::run_native(
-        "Backup Confirmation",
+        "BackMeUp",
         options,
         Box::new(|_cc| Ok(Box::new(BackupWindow {should_close: Arc::new(Mutex::new(false))}))),
     )
