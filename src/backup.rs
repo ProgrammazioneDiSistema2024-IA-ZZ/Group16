@@ -148,6 +148,7 @@ fn backup_with_walkdir<P: AsRef<Path>, Q: AsRef<Path>>(
         };
 
         let entry_path = entry.path();
+        println!("Elaborando: {:?}", entry_path);
         let relative_path = match entry_path.strip_prefix(source) {
             Ok(rel) => rel,
             Err(_) => {
@@ -191,6 +192,8 @@ fn backup_with_walkdir<P: AsRef<Path>, Q: AsRef<Path>>(
                     e
                 ),
             }
+
+            println!("Copiato: {:?}", dest_path);
         }
     }
 
