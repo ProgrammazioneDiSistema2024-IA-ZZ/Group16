@@ -137,7 +137,7 @@ fn backup_with_walkdir<P: AsRef<Path>, Q: AsRef<Path>>(
 
     for entry in WalkDir::new(source)
         .into_iter()
-        .filter_entry(|e| !is_hidden(e))            // Ignore hidden files
+        .filter_entry(|e| !is_hidden_or_problematic(e))            // Ignore hidden files and problematic directories
     {
         let entry = match entry {
             Ok(e) => e,
@@ -197,9 +197,25 @@ fn backup_with_walkdir<P: AsRef<Path>, Q: AsRef<Path>>(
     Ok(total_size)
 }
 
-fn is_hidden(entry: &DirEntry) -> bool {
-    entry.file_name()
-        .to_str()
-        .map(|s| s.starts_with("."))
-        .unwrap_or(false)
+fn is_hidden_or_problematic(entry: &DirEntry) -> bool {
+    let file_name = entry.file_name().to_string_lossy();
+    let path = entry.path();
+
+    // Controlla se il file o directory è nascosto
+    if file_name.starts_with('.') {
+        return true;
+    }
+
+    // Escludi directory problematiche su Linux
+    #[cfg(target_os = "linux")]
+    {
+        let problematic_dirs = ["/sys", "/proc", "/dev", "/run", "/tmp"];
+        if path.is_dir() {
+            if problematic_dirs.iter().any(|&d| path.starts_with(d)) {
+                return true;
+            }
+        }
+    }
+
+    false
 }

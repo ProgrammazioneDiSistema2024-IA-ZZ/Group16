@@ -6,6 +6,8 @@ use std::sync::{Arc, Mutex};
 use eframe::Frame;
 use egui::{Align, Color32, Context, Layout, RichText, ViewportCommand, Window};
 use rfd::FileDialog;
+#[cfg(target_os = "linux")]
+use std::process::Command;
 
 // Struttura del Config per toml
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
