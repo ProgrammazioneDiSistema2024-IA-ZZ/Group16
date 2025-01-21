@@ -111,14 +111,7 @@ impl eframe::App for ConfigWindow {
             ui.label("Source Path:");
             ui.horizontal(|ui| {
                 // Campo per selezionare il percorso sorgente
-                // ui.text_edit_singleline(&mut self.source_path);
-                ui.label(
-                    if self.source_path.is_empty() {
-                        "Click to select a source path -->"
-                    } else {
-                        &self.source_path
-                    },
-                );
+                ui.text_edit_singleline(&mut self.source_path);
 
                 // Pulsante per aprire il file dialog
                 if ui.button("...").clicked() {
@@ -131,14 +124,7 @@ impl eframe::App for ConfigWindow {
             ui.label("Destination Path:");
             ui.horizontal(|ui| {
                 // Campo per selezionare il percorso destinazione
-                // ui.text_edit_singleline(&mut self.destination_path);
-                ui.label(
-                    if self.destination_path.is_empty() {
-                        "Click to select a destination path -->"
-                    } else {
-                        &self.destination_path
-                    },
-                );
+                ui.text_edit_singleline(&mut self.destination_path);
 
                 // Pulsante per aprire il file dialog
                 if ui.button("...").clicked() {
@@ -222,15 +208,21 @@ pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
 
     config_file_path = exe_path.parent().unwrap().join("Resources/");
 
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([350f32, 325f32]),
-        ..Default::default()
-    };
-    eframe::run_native(
-        "BackupMeUp Configuration",
-        options,
-        Box::new(|_cc| Ok(Box::new(ConfigWindow::default()))),
-    )
+
+    if !config_file_path.join("config.toml").exists() {
+        let options = eframe::NativeOptions {
+            viewport: egui::ViewportBuilder::default().with_inner_size([350f32, 325f32]),
+            ..Default::default()
+        };
+        eframe::run_native(
+            "Backup Configuration",
+            options,
+            Box::new(|_cc| Ok(Box::new(ConfigWindow::default()))),
+        )
+    } else {
+        println!("Il file config.toml esiste già, la GUI non verrà mostrata.");
+        Ok(())
+    }
 }
 
 #[derive(Default)]
@@ -245,16 +237,16 @@ impl eframe::App for BackupWindow {
 
         // Aggiungiamo un pop-up al centro dello schermo
         CentralPanel::default().show(ctx, |ui| {
-                    ui.vertical_centered(|ui| {
-                        // Titolo del pop-up
-                        ui.heading("Do you want to proceed with backup?");
-                        ui.add_space(10.0);
-                        // Legenda con le istruzioni
-                        ui.label("1. Scorri verso destra per eseguire il backup").highlight();
-                        ui.label("2. Scorri verso l'alto per annullare il backup").highlight();
-                        ui.label("3. Scorri in diagonale nel lato opposto per riconfigurare il backup").highlight();
-                    });
-                });
+            ui.vertical_centered(|ui| {
+                // Titolo del pop-up
+                ui.heading("Do you want to proceed with backup?");
+                ui.add_space(10.0);
+                // Legenda con le istruzioni
+                ui.label("1. Scorri verso destra per eseguire il backup").highlight();
+                ui.label("2. Scorri verso l'alto per annullare il backup").highlight();
+                ui.label("3. Scorri in diagonale nel lato opposto per riconfigurare il backup").highlight();
+            });
+        });
 
     }
 }
