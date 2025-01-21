@@ -197,8 +197,6 @@ impl eframe::App for ConfigWindow {
 }
 
 
-
-
 // Funzione per avviare la GUI solo se `config.toml` non esiste
 pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
     println!("Verifica se il file di configurazione esiste...");
@@ -208,21 +206,15 @@ pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
 
     config_file_path = exe_path.parent().unwrap().join("Resources/");
 
-
-    if !config_file_path.join("config.toml").exists() {
-        let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size([350f32, 325f32]),
-            ..Default::default()
-        };
-        eframe::run_native(
-            "Backup Configuration",
-            options,
-            Box::new(|_cc| Ok(Box::new(ConfigWindow::default()))),
-        )
-    } else {
-        println!("Il file config.toml esiste già, la GUI non verrà mostrata.");
-        Ok(())
-    }
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_inner_size([350f32, 325f32]),
+        ..Default::default()
+    };
+    eframe::run_native(
+        "BackupMeUp Configuration",
+        options,
+        Box::new(|_cc| Ok(Box::new(ConfigWindow::default()))),
+    )
 }
 
 #[derive(Default)]
@@ -237,16 +229,16 @@ impl eframe::App for BackupWindow {
 
         // Aggiungiamo un pop-up al centro dello schermo
         CentralPanel::default().show(ctx, |ui| {
-            ui.vertical_centered(|ui| {
-                // Titolo del pop-up
-                ui.heading("Do you want to proceed with backup?");
-                ui.add_space(10.0);
-                // Legenda con le istruzioni
-                ui.label("1. Scorri verso destra per eseguire il backup").highlight();
-                ui.label("2. Scorri verso l'alto per annullare il backup").highlight();
-                ui.label("3. Scorri in diagonale nel lato opposto per riconfigurare il backup").highlight();
-            });
-        });
+                    ui.vertical_centered(|ui| {
+                        // Titolo del pop-up
+                        ui.heading("Do you want to proceed with backup?");
+                        ui.add_space(10.0);
+                        // Legenda con le istruzioni
+                        ui.label("1. Scorri verso destra per eseguire il backup").highlight();
+                        ui.label("2. Scorri verso l'alto per annullare il backup").highlight();
+                        ui.label("3. Scorri in diagonale nel lato opposto per riconfigurare il backup").highlight();
+                    });
+                });
 
     }
 }
