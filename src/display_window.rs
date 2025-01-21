@@ -45,6 +45,16 @@ impl ConfigWindow {
         file.write_all(toml_str.as_bytes()).unwrap();
     }
 
+    // Read config.toml if exists and fills fields with the values
+    fn read_config(&mut self, config_file_path: PathBuf) {
+        let config = fs::read_to_string(config_file_path.join("config.toml")).unwrap();
+        let config: Config = toml::from_str(&config).unwrap();
+        self.source_path = config.source_path;
+        self.destination_path = config.destination_path;
+        self.backup_type = config.backup_type;
+        self.extensions_to_backup = config.extensions_to_backup.join(", ");
+    }
+
     // Metodo per selezionare una directory tramite un file dialog
     fn select_directory() -> Option<String> {
         #[cfg(not(target_os = "linux"))]
@@ -75,6 +85,11 @@ impl eframe::App for ConfigWindow {
         let exe_path: PathBuf = PathBuf::from(env::current_exe().unwrap().parent().unwrap());
         let config_file_path = exe_path.parent().unwrap().join("Resources/");
 
+        // Check if config.toml exists
+        if config_file_path.join("config.toml").exists() {
+            self.read_config(config_file_path.clone());
+        }
+
         // Variabile per tracciare gli errori
         let mut error_message = String::new();
 
@@ -96,7 +111,14 @@ impl eframe::App for ConfigWindow {
             ui.label("Source Path:");
             ui.horizontal(|ui| {
                 // Campo per selezionare il percorso sorgente
-                ui.text_edit_singleline(&mut self.source_path);
+                // ui.text_edit_singleline(&mut self.source_path);
+                ui.label(
+                    if self.source_path.is_empty() {
+                        "Click to select a source path -->"
+                    } else {
+                        &self.source_path
+                    },
+                );
 
                 // Pulsante per aprire il file dialog
                 if ui.button("...").clicked() {
@@ -109,7 +131,14 @@ impl eframe::App for ConfigWindow {
             ui.label("Destination Path:");
             ui.horizontal(|ui| {
                 // Campo per selezionare il percorso destinazione
-                ui.text_edit_singleline(&mut self.destination_path);
+                // ui.text_edit_singleline(&mut self.destination_path);
+                ui.label(
+                    if self.destination_path.is_empty() {
+                        "Click to select a destination path -->"
+                    } else {
+                        &self.destination_path
+                    },
+                );
 
                 // Pulsante per aprire il file dialog
                 if ui.button("...").clicked() {
@@ -193,21 +222,15 @@ pub fn show_gui_if_needed() -> Result<(), eframe::Error> {
 
     config_file_path = exe_path.parent().unwrap().join("Resources/");
 
-
-    if !config_file_path.join("config.toml").exists() {
-        let options = eframe::NativeOptions {
-            viewport: egui::ViewportBuilder::default().with_inner_size([350f32, 325f32]),
-            ..Default::default()
-        };
-        eframe::run_native(
-            "Backup Configuration",
-            options,
-            Box::new(|_cc| Ok(Box::new(ConfigWindow::default()))),
-        )
-    } else {
-        println!("Il file config.toml esiste già, la GUI non verrà mostrata.");
-        Ok(())
-    }
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default().with_inner_size([350f32, 325f32]),
+        ..Default::default()
+    };
+    eframe::run_native(
+        "BackupMeUp Configuration",
+        options,
+        Box::new(|_cc| Ok(Box::new(ConfigWindow::default()))),
+    )
 }
 
 #[derive(Default)]
