@@ -1,0 +1,4 @@
+source_path = "/Users/lorenzoricci/Desktop/MyBackup/__pycache__"
+destination_path = "/Users/lorenzoricci/Desktop/backmeup"
+backup_type = "directory"
+extensions_to_backup = [""]

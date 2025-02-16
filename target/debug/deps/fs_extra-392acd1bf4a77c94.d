@@ -1,0 +1,10 @@
+/Users/lorenzoricci/Documents/Politecnico_di_Torino/RUST/Backup-Di-Emergenza/Group16/target/debug/deps/libfs_extra-392acd1bf4a77c94.rmeta: /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/lib.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/error.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/file.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/dir.rs
+
+/Users/lorenzoricci/Documents/Politecnico_di_Torino/RUST/Backup-Di-Emergenza/Group16/target/debug/deps/libfs_extra-392acd1bf4a77c94.rlib: /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/lib.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/error.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/file.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/dir.rs
+
+/Users/lorenzoricci/Documents/Politecnico_di_Torino/RUST/Backup-Di-Emergenza/Group16/target/debug/deps/fs_extra-392acd1bf4a77c94.d: /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/lib.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/error.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/file.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/dir.rs
+
+/Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/lib.rs:
+/Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/error.rs:
+/Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/file.rs:
+/Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/fs_extra-1.3.0/src/dir.rs:

@@ -170,7 +170,6 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
     println!("Tracciamento abilitato!");
 
     let exe_path: PathBuf = PathBuf::from(env::current_exe().unwrap().parent().unwrap());
-    let audio_path: PathBuf = exe_path.parent().unwrap().join("Resources/audio/");
     let config_file_path: PathBuf = exe_path.parent().unwrap().join("Resources/");
 
 
@@ -210,18 +209,11 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                     points.clear();
                     let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
                     *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
-
-
-                    // if(config_file_path.join("config.toml").exists()){
-                    //     fs::remove_file(config_file_path.join("config.toml")).expect("Error deleting file");
-                    // }
-
                     if let Err(e) = Command::new(exe_path.join("config_program")).arg("config").spawn() {
                         eprintln!("Failed to spawn process: {}", e);
                     }
                 }
 
-                // Se il tracciamento è abilitato, verifica se viene disegnato un "+", e non solo gli angoli
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Confirm {
 
                     if config_file_path.join("config.toml").exists() {
@@ -241,11 +233,7 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                                     eprintln!("Backup failed due to fs_extra error: {}", e),
                             }
                         }
-
-                        // let mut enabled_ref = tracking_enabled_clone.lock().unwrap();
-                        // *enabled_ref = false;  // Cambia qui lo stato di tracking_enabled
                         play_sound(1);
-                        // points.clear();
                     }else{
                         play_sound(2);
                         eprintln!("File di configurazione non trovato! Backup non eseguito.");
@@ -256,7 +244,6 @@ pub fn track_mouse(screen_width: f64, screen_height: f64) {
                     points.clear();
                 }
                 if enabled && contains_corners(&points, screen_width, screen_height, enabled) == Action::Cancel {
-
                     println!("Backup cancelled");
                     play_sound(2);
                     points.clear();

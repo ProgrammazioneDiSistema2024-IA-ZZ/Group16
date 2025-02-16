@@ -1,0 +1,10 @@
+/Users/lorenzoricci/Documents/Politecnico_di_Torino/RUST/Backup-Di-Emergenza/Group16/target/debug/deps/libarboard-f3929dce343b77f6.rmeta: /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/lib.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/common.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/platform/mod.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/platform/osx.rs
+
+/Users/lorenzoricci/Documents/Politecnico_di_Torino/RUST/Backup-Di-Emergenza/Group16/target/debug/deps/libarboard-f3929dce343b77f6.rlib: /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/lib.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/common.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/platform/mod.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/platform/osx.rs
+
+/Users/lorenzoricci/Documents/Politecnico_di_Torino/RUST/Backup-Di-Emergenza/Group16/target/debug/deps/arboard-f3929dce343b77f6.d: /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/lib.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/common.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/platform/mod.rs /Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/platform/osx.rs
+
+/Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/lib.rs:
+/Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/common.rs:
+/Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/platform/mod.rs:
+/Users/lorenzoricci/.cargo/registry/src/index.crates.io-6f17d22bba15001f/arboard-3.4.1/src/platform/osx.rs:

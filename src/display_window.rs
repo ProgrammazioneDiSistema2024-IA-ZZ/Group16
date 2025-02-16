@@ -23,8 +23,8 @@ struct Config {
 struct ConfigWindow {
     source_path: String,
     destination_path: String,
-    backup_type: String, // Default sarà impostato a "full-disk" manualmente
-    extensions_to_backup: String, // Le estensioni sono inserite come stringa, verranno separate dopo
+    backup_type: String,
+    extensions_to_backup: String,
 }
 
 impl ConfigWindow {
@@ -92,13 +92,6 @@ impl eframe::App for ConfigWindow {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut Frame) {
         let exe_path: PathBuf = PathBuf::from(env::current_exe().unwrap().parent().unwrap());
         let config_file_path = exe_path.parent().unwrap().join("Resources/");
-
-        // Check if config.toml exists
-        // if config_file_path.join("config.toml").exists() {
-        //     self.read_config(config_file_path.clone());
-        //     // Delete the config file
-        //     fs::remove_file(config_file_path.join("config.toml")).unwrap();
-        // }
 
         // Variabile per tracciare gli errori
         let mut error_message = String::new();

@@ -1,0 +1,1 @@
+/Users/lorenzoricci/Documents/Politecnico_di_Torino/RUST/Backup-Di-Emergenza/Group16/target/debug/uninstall_service: /Users/lorenzoricci/Documents/Politecnico_di_Torino/RUST/Backup-Di-Emergenza/Group16/src/uninstall_service.rs
